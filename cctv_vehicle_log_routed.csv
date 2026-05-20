@@ -1,0 +1,1037 @@
+Date,CCTV_ID,Timestamp,Brand,Color,Type
+10-05-2026,CCTV08,00:31:12,Suzuki,Bronze Silver,Motorcycle
+10-05-2026,CCTV07,00:32:39,Suzuki,Bronze Silver,Motorcycle
+10-05-2026,CCTV10,01:10:32,Hino,Yellow-Green,Truck
+10-05-2026,CCTV09,01:15:05,Hino,Yellow-Green,Truck
+10-05-2026,CCTV08,01:18:24,Hino,Yellow-Green,Truck
+10-05-2026,CCTV07,01:20:19,Hino,Yellow-Green,Truck
+10-05-2026,CCTV09,01:42:34,BYD,Yellow,Car
+10-05-2026,CCTV04,01:50:48,Mitsubishi,Slate Blue,Truck
+10-05-2026,CCTV01,02:22:42,Hino,Charcoal,Truck
+10-05-2026,CCTV03,02:25:19,Hino,Charcoal,Truck
+10-05-2026,CCTV04,02:28:19,Hino,Charcoal,Truck
+10-05-2026,CCTV10,02:32:32,Hino,Pink,Bus
+10-05-2026,CCTV09,02:33:17,Hino,Pink,Bus
+10-05-2026,CCTV08,02:34:32,Hino,Pink,Bus
+10-05-2026,CCTV07,02:35:13,Hino,Pink,Bus
+10-05-2026,CCTV03,03:41:07,Mazda,Gold,Car
+10-05-2026,CCTV01,03:42:28,Mazda,Gold,Car
+10-05-2026,CCTV10,03:46:29,Mazda,Gold,Car
+10-05-2026,CCTV03,03:56:15,Yamaha,Bronze Gold,Motorcycle
+10-05-2026,CCTV09,03:58:08,Mercedes-Benz,Bronze Silver,Bus
+10-05-2026,CCTV09,03:59:42,Yamaha,Bronze Gold,Motorcycle
+10-05-2026,CCTV08,04:00:27,Mercedes-Benz,Bronze Silver,Bus
+10-05-2026,CCTV08,04:00:44,Yamaha,Bronze Gold,Motorcycle
+10-05-2026,CCTV07,04:02:38,Mercedes-Benz,Bronze Silver,Bus
+10-05-2026,CCTV04,04:03:14,Mercedes-Benz,Bronze Silver,Bus
+10-05-2026,CCTV07,04:04:16,Yamaha,Bronze Gold,Motorcycle
+10-05-2026,CCTV01,04:30:38,Hino,White,Bus
+10-05-2026,CCTV09,04:31:27,Hino,White,Bus
+10-05-2026,CCTV08,04:33:33,Hino,White,Bus
+10-05-2026,CCTV03,04:36:30,Yamaha,Maroon,Motorcycle
+10-05-2026,CCTV07,04:37:17,Hino,White,Bus
+10-05-2026,CCTV04,04:39:17,Hino,White,Bus
+10-05-2026,CCTV01,05:00:23,Mitsubishi,Red,Truck
+10-05-2026,CCTV03,05:04:06,Mitsubishi,Red,Truck
+10-05-2026,CCTV10,05:05:41,Mitsubishi,Metallic Green,Truck
+10-05-2026,CCTV07,05:06:19,GWM,Light Green,Car
+10-05-2026,CCTV04,05:06:30,Mitsubishi,Red,Truck
+10-05-2026,CCTV09,05:07:03,Mitsubishi,Metallic Green,Truck
+10-05-2026,CCTV03,05:08:03,Mitsubishi,Metallic Green,Truck
+10-05-2026,CCTV08,05:09:15,GWM,Light Green,Car
+10-05-2026,CCTV04,05:09:32,Mitsubishi,Metallic Green,Truck
+10-05-2026,CCTV09,05:12:52,GWM,Light Green,Car
+10-05-2026,CCTV10,05:14:54,GWM,Light Green,Car
+10-05-2026,CCTV03,05:32:10,Mitsubishi,Chartreuse,Truck
+10-05-2026,CCTV03,05:42:38,Chevrolet,Blue,Car
+10-05-2026,CCTV04,05:46:18,Isuzu,Metallic Green,Truck
+10-05-2026,CCTV03,05:49:37,Isuzu,Metallic Green,Truck
+10-05-2026,CCTV01,05:52:55,Isuzu,Metallic Green,Truck
+10-05-2026,CCTV03,06:14:53,Honda,Bronze Gold,Motorcycle
+10-05-2026,CCTV04,06:16:11,Honda,Bronze Gold,Motorcycle
+10-05-2026,CCTV07,06:33:52,Mercedes-Benz,Metallic Green,Car
+10-05-2026,CCTV10,06:55:05,Suzuki,Metallic Green,Motorcycle
+10-05-2026,CCTV09,06:59:14,Suzuki,Metallic Green,Motorcycle
+10-05-2026,CCTV03,07:00:34,Suzuki,Metallic Green,Motorcycle
+10-05-2026,CCTV04,07:02:24,Suzuki,Metallic Green,Motorcycle
+10-05-2026,CCTV10,07:18:34,Peugeot,Black,Car
+10-05-2026,CCTV09,07:20:50,Peugeot,Black,Car
+10-05-2026,CCTV07,07:23:05,Honda,Bronze Gray,Car
+10-05-2026,CCTV08,07:24:54,Honda,Bronze Gray,Car
+10-05-2026,CCTV03,07:24:58,Honda,Green,Motorcycle
+10-05-2026,CCTV03,07:25:08,Peugeot,Black,Car
+10-05-2026,CCTV09,07:26:15,Honda,Bronze Gray,Car
+10-05-2026,CCTV10,07:27:27,Honda,Bronze Gray,Car
+10-05-2026,CCTV09,07:28:03,Honda,Green,Motorcycle
+10-05-2026,CCTV04,07:28:28,Peugeot,Black,Car
+10-05-2026,CCTV08,07:29:20,Honda,Green,Motorcycle
+10-05-2026,CCTV07,07:29:52,Honda,Green,Motorcycle
+10-05-2026,CCTV10,07:42:46,Hino,Dark Green,Truck
+10-05-2026,CCTV03,07:50:57,Subaru,Silver,Car
+10-05-2026,CCTV04,07:51:47,Subaru,Silver,Car
+10-05-2026,CCTV07,08:18:55,Isuzu,Black,Truck
+10-05-2026,CCTV10,08:20:15,Mercedes-Benz,Red,Bus
+10-05-2026,CCTV04,08:23:26,Isuzu,Black,Truck
+10-05-2026,CCTV04,08:23:46,Yamaha,Yellow-Green,Motorcycle
+10-05-2026,CCTV03,09:34:47,Mercedes-Benz,Metallic Green,Bus
+10-05-2026,CCTV01,09:36:49,Mercedes-Benz,Metallic Green,Bus
+10-05-2026,CCTV10,09:39:35,Mercedes-Benz,Metallic Green,Bus
+10-05-2026,CCTV04,09:46:44,Isuzu,Metallic Green,Truck
+10-05-2026,CCTV01,09:47:05,Isuzu,Chartreuse,Truck
+10-05-2026,CCTV09,09:48:48,Isuzu,Chartreuse,Truck
+10-05-2026,CCTV08,09:50:02,Isuzu,Chartreuse,Truck
+10-05-2026,CCTV09,09:53:07,Nissan,Slate Blue,Car
+10-05-2026,CCTV08,09:54:13,Nissan,Slate Blue,Car
+10-05-2026,CCTV07,09:54:34,Isuzu,Chartreuse,Truck
+10-05-2026,CCTV07,09:55:40,Nissan,Slate Blue,Car
+10-05-2026,CCTV04,09:56:57,Nissan,Slate Blue,Car
+10-05-2026,CCTV04,09:57:16,Isuzu,Chartreuse,Truck
+10-05-2026,CCTV03,10:04:23,Honda,Maroon,Motorcycle
+10-05-2026,CCTV09,10:08:36,Honda,Maroon,Motorcycle
+10-05-2026,CCTV08,10:12:19,Honda,Maroon,Motorcycle
+10-05-2026,CCTV07,10:15:52,Honda,Maroon,Motorcycle
+10-05-2026,CCTV10,10:36:30,Jaecoo,Slate Blue,Car
+10-05-2026,CCTV03,10:39:22,Hino,Black,Truck
+10-05-2026,CCTV09,10:39:45,Jaecoo,Slate Blue,Car
+10-05-2026,CCTV04,10:41:49,Hino,Black,Truck
+10-05-2026,CCTV03,10:43:32,Jaecoo,Slate Blue,Car
+10-05-2026,CCTV04,10:46:29,Jaecoo,Slate Blue,Car
+10-05-2026,CCTV08,10:56:09,Aion,Gray,Car
+10-05-2026,CCTV03,11:05:01,Mini,Blue-White,Car
+10-05-2026,CCTV10,11:52:25,Honda,White,Motorcycle
+10-05-2026,CCTV09,11:53:32,Honda,White,Motorcycle
+10-05-2026,CCTV03,11:55:47,Honda,White,Motorcycle
+10-05-2026,CCTV04,11:58:06,Honda,White,Motorcycle
+10-05-2026,CCTV04,11:59:06,Yamaha,Blue-White,Motorcycle
+10-05-2026,CCTV07,11:59:45,Yamaha,Blue-White,Motorcycle
+10-05-2026,CCTV08,12:04:10,Yamaha,Blue-White,Motorcycle
+10-05-2026,CCTV08,12:08:19,Hino,Bronze Gray,Bus
+10-05-2026,CCTV09,12:08:37,Yamaha,Blue-White,Motorcycle
+10-05-2026,CCTV07,12:09:07,Hino,Bronze Gray,Bus
+10-05-2026,CCTV03,13:40:51,Honda,Blue,Motorcycle
+10-05-2026,CCTV01,13:42:00,Honda,Blue,Motorcycle
+10-05-2026,CCTV03,13:43:41,Mitsubishi,Yellow,Truck
+10-05-2026,CCTV10,13:45:38,Honda,Blue,Motorcycle
+10-05-2026,CCTV07,15:09:24,Hino,Red-White,Truck
+10-05-2026,CCTV04,15:10:22,Hino,Red-White,Truck
+10-05-2026,CCTV10,15:20:05,Suzuki,Bronze Gold,Car
+10-05-2026,CCTV04,15:21:07,Suzuki,Slate Blue,Motorcycle
+10-05-2026,CCTV07,15:21:37,Suzuki,Slate Blue,Motorcycle
+10-05-2026,CCTV08,15:22:34,Suzuki,Slate Blue,Motorcycle
+10-05-2026,CCTV09,15:24:31,Suzuki,Slate Blue,Motorcycle
+10-05-2026,CCTV09,15:24:56,Suzuki,Bronze Gold,Car
+10-05-2026,CCTV03,15:28:56,Mercedes-Benz,Yellow,Bus
+10-05-2026,CCTV08,15:29:40,Suzuki,Bronze Gold,Car
+10-05-2026,CCTV07,15:30:46,Suzuki,Bronze Gold,Car
+10-05-2026,CCTV01,15:32:46,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV09,15:35:07,Isuzu,Charcoal,Bus
+10-05-2026,CCTV09,15:35:39,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV08,15:39:21,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV08,15:39:57,Isuzu,Charcoal,Bus
+10-05-2026,CCTV07,15:41:08,Isuzu,Charcoal,Bus
+10-05-2026,CCTV07,15:41:59,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV04,15:43:20,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV04,15:43:42,Isuzu,Charcoal,Bus
+10-05-2026,CCTV10,15:44:16,Isuzu,Maroon,Bus
+10-05-2026,CCTV09,15:47:17,Isuzu,Maroon,Bus
+10-05-2026,CCTV08,15:49:36,Isuzu,Maroon,Bus
+10-05-2026,CCTV07,15:54:17,Isuzu,Maroon,Bus
+10-05-2026,CCTV04,15:55:19,Toyota,Bronze Gold,Car
+10-05-2026,CCTV03,15:56:08,Toyota,Bronze Gold,Car
+10-05-2026,CCTV01,15:59:28,Toyota,Bronze Gold,Car
+10-05-2026,CCTV01,16:17:17,Nissan,Navy Blue,Car
+10-05-2026,CCTV03,16:20:12,Nissan,Navy Blue,Car
+10-05-2026,CCTV04,16:22:04,Nissan,Navy Blue,Car
+10-05-2026,CCTV07,16:25:45,Honda,Charcoal,Motorcycle
+10-05-2026,CCTV03,16:30:23,Isuzu,Olive Green,Bus
+10-05-2026,CCTV07,16:42:26,Mercedes-Benz,Yellow,Bus
+10-05-2026,CCTV04,16:44:51,Mercedes-Benz,Yellow,Bus
+10-05-2026,CCTV04,16:51:59,Hino,Bronze,Truck
+10-05-2026,CCTV07,16:55:13,Hino,Bronze,Truck
+10-05-2026,CCTV08,16:59:48,Hino,Bronze,Truck
+10-05-2026,CCTV09,17:01:08,Hino,Bronze,Truck
+10-05-2026,CCTV10,17:05:54,Hino,Bronze,Truck
+10-05-2026,CCTV03,17:35:18,Ford,Gray,Truck
+10-05-2026,CCTV04,17:35:37,Isuzu,Maroon,Truck
+10-05-2026,CCTV09,17:36:44,Ford,Gray,Truck
+10-05-2026,CCTV04,17:37:20,Isuzu,Maroon,Bus
+10-05-2026,CCTV03,17:37:49,Isuzu,Maroon,Truck
+10-05-2026,CCTV07,17:38:44,Isuzu,Maroon,Bus
+10-05-2026,CCTV08,17:39:56,Isuzu,Maroon,Bus
+10-05-2026,CCTV01,17:40:17,Isuzu,Maroon,Truck
+10-05-2026,CCTV08,17:40:29,Ford,Gray,Truck
+10-05-2026,CCTV07,17:41:20,Ford,Gray,Truck
+10-05-2026,CCTV09,17:41:24,Isuzu,Maroon,Bus
+10-05-2026,CCTV09,17:53:57,Mercedes-Benz,Dark Green,Bus
+10-05-2026,CCTV08,17:54:49,Mercedes-Benz,Dark Green,Bus
+10-05-2026,CCTV07,17:55:57,Mercedes-Benz,Dark Green,Bus
+10-05-2026,CCTV04,18:00:12,Mercedes-Benz,Dark Green,Bus
+10-05-2026,CCTV04,18:08:47,Hino,Pink,Bus
+10-05-2026,CCTV07,18:09:17,Hino,Pink,Bus
+10-05-2026,CCTV08,18:11:17,Hino,Pink,Bus
+10-05-2026,CCTV10,18:12:04,Hino,Yellow,Bus
+10-05-2026,CCTV09,18:13:58,Hino,Pink,Bus
+10-05-2026,CCTV10,18:15:56,Hino,Pink,Bus
+10-05-2026,CCTV07,18:22:22,Mercedes-Benz,Blue-White,Bus
+10-05-2026,CCTV01,18:33:47,Isuzu,Gold,Bus
+10-05-2026,CCTV03,19:06:31,Ford,Black,Truck
+10-05-2026,CCTV03,19:12:58,Tesla,Maroon,Car
+10-05-2026,CCTV01,19:13:40,Tesla,Maroon,Car
+10-05-2026,CCTV10,19:16:51,Tesla,Maroon,Car
+10-05-2026,CCTV07,19:29:24,Peugeot,Light Green,Car
+10-05-2026,CCTV03,19:34:51,Hino,Slate Blue,Bus
+10-05-2026,CCTV09,19:37:30,Hino,Slate Blue,Bus
+10-05-2026,CCTV08,19:39:50,Hino,Slate Blue,Bus
+10-05-2026,CCTV07,19:43:48,Hino,Slate Blue,Bus
+10-05-2026,CCTV10,19:44:32,Hino,Olive Green,Truck
+10-05-2026,CCTV09,19:47:01,Hino,Olive Green,Truck
+10-05-2026,CCTV08,19:48:02,Hino,Olive Green,Truck
+10-05-2026,CCTV07,19:48:38,Hino,Olive Green,Truck
+10-05-2026,CCTV09,19:59:19,Hino,Bronze Silver,Truck
+10-05-2026,CCTV08,20:04:13,Hino,Bronze Silver,Truck
+10-05-2026,CCTV07,20:05:05,Hino,Bronze Silver,Truck
+10-05-2026,CCTV04,20:09:09,Hino,Bronze Silver,Truck
+10-05-2026,CCTV07,20:57:29,Geely,Black,Car
+10-05-2026,CCTV04,21:00:10,Geely,Black,Car
+10-05-2026,CCTV03,21:12:21,Suzuki,Bronze Gold,Motorcycle
+10-05-2026,CCTV10,21:15:11,Isuzu,Black,Bus
+10-05-2026,CCTV09,21:15:47,Suzuki,Bronze Gold,Motorcycle
+10-05-2026,CCTV09,21:17:46,Isuzu,Black,Bus
+10-05-2026,CCTV08,21:18:26,Suzuki,Bronze Gold,Motorcycle
+10-05-2026,CCTV03,21:21:50,Isuzu,Black,Bus
+10-05-2026,CCTV07,21:23:02,Suzuki,Bronze Gold,Motorcycle
+10-05-2026,CCTV04,21:25:50,Isuzu,Black,Bus
+10-05-2026,CCTV09,21:27:51,Hino,Yellow,Bus
+10-05-2026,CCTV04,21:36:48,Hino,Olive Green,Truck
+10-05-2026,CCTV03,21:37:27,Hino,Olive Green,Truck
+10-05-2026,CCTV01,21:38:17,Hino,Olive Green,Truck
+10-05-2026,CCTV04,21:38:35,Hino,Gold,Bus
+10-05-2026,CCTV03,21:43:25,Hino,Gold,Bus
+10-05-2026,CCTV01,21:44:02,Hino,Gold,Bus
+10-05-2026,CCTV10,21:50:24,Hino,Yellow,Bus
+10-05-2026,CCTV09,21:53:38,Hino,Yellow,Bus
+10-05-2026,CCTV03,21:55:55,Hino,Yellow,Bus
+10-05-2026,CCTV04,21:56:26,Hino,Yellow,Bus
+10-05-2026,CCTV10,22:03:20,Honda,Metallic Green,Motorcycle
+10-05-2026,CCTV09,22:08:17,Honda,Metallic Green,Motorcycle
+10-05-2026,CCTV08,22:12:22,Honda,Metallic Green,Motorcycle
+10-05-2026,CCTV07,22:16:13,Honda,Metallic Green,Motorcycle
+10-05-2026,CCTV01,22:25:37,Mitsubishi,Gold,Truck
+10-05-2026,CCTV07,22:37:10,Kawasaki,Light Green,Motorcycle
+10-05-2026,CCTV04,22:39:34,Kawasaki,Light Green,Motorcycle
+10-05-2026,CCTV10,22:55:11,Hino,Charcoal,Truck
+10-05-2026,CCTV09,22:56:37,Hino,Charcoal,Truck
+10-05-2026,CCTV08,22:58:33,Hino,Charcoal,Truck
+10-05-2026,CCTV07,23:02:09,Hino,Charcoal,Truck
+10-05-2026,CCTV03,23:16:36,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV10,23:17:26,Mercedes-Benz,Yellow-Green,Bus
+10-05-2026,CCTV09,23:19:26,Mercedes-Benz,Yellow-Green,Bus
+10-05-2026,CCTV08,23:20:46,Mercedes-Benz,Yellow-Green,Bus
+10-05-2026,CCTV01,23:20:58,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV07,23:21:46,Mercedes-Benz,Yellow-Green,Bus
+10-05-2026,CCTV10,23:22:12,Yamaha,Red-White,Motorcycle
+10-05-2026,CCTV07,23:55:27,Isuzu,Chartreuse,Truck
+10-05-2026,CCTV04,23:57:10,Isuzu,Chartreuse,Truck
+11-05-2026,CCTV07,00:00:41,Hino,Yellow,Bus
+11-05-2026,CCTV08,00:02:16,Hino,Yellow,Bus
+11-05-2026,CCTV09,00:04:06,Hino,Yellow,Bus
+11-05-2026,CCTV10,00:04:56,Hino,Yellow,Bus
+11-05-2026,CCTV08,00:09:43,Mercedes-Benz,Navy Blue,Bus
+11-05-2026,CCTV01,00:34:50,Kawasaki,Bronze Gold,Motorcycle
+11-05-2026,CCTV03,00:37:57,Kawasaki,Bronze Gold,Motorcycle
+11-05-2026,CCTV04,00:38:39,Kawasaki,Bronze Gold,Motorcycle
+11-05-2026,CCTV10,00:48:04,Hino,Bronze Gray,Truck
+11-05-2026,CCTV03,00:48:46,Tesla,Olive Green,Car
+11-05-2026,CCTV04,00:51:46,Tesla,Olive Green,Car
+11-05-2026,CCTV01,00:54:07,Mitsubishi,Gold,Truck
+11-05-2026,CCTV10,01:25:40,Isuzu,Green,Bus
+11-05-2026,CCTV10,02:01:41,Ford,Olive Green,Truck
+11-05-2026,CCTV07,02:03:48,Hino,Slate Blue,Bus
+11-05-2026,CCTV07,02:23:49,Suzuki,Gold,Motorcycle
+11-05-2026,CCTV04,02:27:39,Suzuki,Gold,Motorcycle
+11-05-2026,CCTV04,02:37:06,Subaru,Gold,Car
+11-05-2026,CCTV03,02:37:37,Subaru,Gold,Car
+11-05-2026,CCTV04,02:38:20,Isuzu,Metallic Green,Bus
+11-05-2026,CCTV01,02:38:36,Subaru,Gold,Car
+11-05-2026,CCTV03,02:39:33,Isuzu,Metallic Green,Bus
+11-05-2026,CCTV01,02:44:02,Isuzu,Metallic Green,Bus
+11-05-2026,CCTV09,02:46:55,Hino,Yellow-Green,Bus
+11-05-2026,CCTV08,02:50:50,Hino,Yellow-Green,Bus
+11-05-2026,CCTV07,02:54:32,Hino,Yellow-Green,Bus
+11-05-2026,CCTV01,02:54:45,Isuzu,Black,Bus
+11-05-2026,CCTV04,02:55:53,Hino,Yellow-Green,Bus
+11-05-2026,CCTV03,02:59:05,Isuzu,Black,Bus
+11-05-2026,CCTV04,03:02:27,Isuzu,Black,Bus
+11-05-2026,CCTV09,03:06:56,Kawasaki,Gold,Motorcycle
+11-05-2026,CCTV09,03:18:18,Hino,Bronze,Bus
+11-05-2026,CCTV08,03:19:55,Hino,Bronze,Bus
+11-05-2026,CCTV07,03:22:24,Hino,Bronze,Bus
+11-05-2026,CCTV04,03:25:15,Hino,Bronze,Bus
+11-05-2026,CCTV04,03:49:34,Mitsubishi,Blue-White,Truck
+11-05-2026,CCTV03,03:58:19,Isuzu,Gold,Bus
+11-05-2026,CCTV04,03:59:39,Isuzu,Gold,Bus
+11-05-2026,CCTV08,04:06:27,Isuzu,Green,Bus
+11-05-2026,CCTV07,04:07:41,Isuzu,Green,Bus
+11-05-2026,CCTV03,04:21:38,Mercedes-Benz,Yellow-Green,Bus
+11-05-2026,CCTV09,04:23:01,Mercedes-Benz,Yellow-Green,Bus
+11-05-2026,CCTV08,04:26:42,Mercedes-Benz,Yellow-Green,Bus
+11-05-2026,CCTV07,04:31:26,Mercedes-Benz,Yellow-Green,Bus
+11-05-2026,CCTV01,04:33:16,Kawasaki,Green,Motorcycle
+11-05-2026,CCTV08,04:43:03,Hino,Navy Blue,Bus
+11-05-2026,CCTV04,04:44:38,Mitsubishi,Bronze,Truck
+11-05-2026,CCTV07,04:46:08,Mitsubishi,Bronze,Truck
+11-05-2026,CCTV08,04:49:15,Mitsubishi,Bronze,Truck
+11-05-2026,CCTV09,04:50:23,Mitsubishi,Bronze,Truck
+11-05-2026,CCTV03,04:50:35,BMW,Light Green,Car
+11-05-2026,CCTV10,04:51:33,Mitsubishi,Bronze,Truck
+11-05-2026,CCTV01,04:53:01,BMW,Light Green,Car
+11-05-2026,CCTV10,04:54:35,BMW,Light Green,Car
+11-05-2026,CCTV04,05:13:31,Honda,Gold,Motorcycle
+11-05-2026,CCTV07,05:17:57,Honda,Gold,Motorcycle
+11-05-2026,CCTV08,05:19:06,Honda,Gold,Motorcycle
+11-05-2026,CCTV09,05:20:34,Honda,Gold,Motorcycle
+11-05-2026,CCTV04,05:21:18,Mercedes-Benz,White,Bus
+11-05-2026,CCTV10,05:21:43,Honda,Gold,Motorcycle
+11-05-2026,CCTV10,06:27:32,Honda,Yellow-Green,Motorcycle
+11-05-2026,CCTV09,06:28:07,Honda,Yellow-Green,Motorcycle
+11-05-2026,CCTV10,06:29:11,Mitsubishi,Silver,Truck
+11-05-2026,CCTV08,06:31:12,Honda,Yellow-Green,Motorcycle
+11-05-2026,CCTV09,06:31:50,Mitsubishi,Silver,Truck
+11-05-2026,CCTV03,06:32:32,Mitsubishi,Silver,Truck
+11-05-2026,CCTV07,06:35:10,Honda,Yellow-Green,Motorcycle
+11-05-2026,CCTV04,06:37:03,Mitsubishi,Silver,Truck
+11-05-2026,CCTV03,06:42:37,Suzuki,Blue-White,Motorcycle
+11-05-2026,CCTV01,07:21:14,Mercedes-Benz,Light Green,Bus
+11-05-2026,CCTV09,07:24:52,Mercedes-Benz,Light Green,Bus
+11-05-2026,CCTV08,07:27:00,Mercedes-Benz,Light Green,Bus
+11-05-2026,CCTV07,07:30:02,Mercedes-Benz,Light Green,Bus
+11-05-2026,CCTV04,07:30:54,Mercedes-Benz,Light Green,Bus
+11-05-2026,CCTV03,07:32:36,Kia,Bronze Silver,Car
+11-05-2026,CCTV04,07:33:14,Kia,Bronze Silver,Car
+11-05-2026,CCTV01,07:38:26,Yamaha,Gray,Motorcycle
+11-05-2026,CCTV09,07:42:12,Yamaha,Gray,Motorcycle
+11-05-2026,CCTV08,07:43:50,Yamaha,Gray,Motorcycle
+11-05-2026,CCTV07,07:45:20,Yamaha,Gray,Motorcycle
+11-05-2026,CCTV04,07:46:23,Yamaha,Gray,Motorcycle
+11-05-2026,CCTV08,08:19:53,Honda,White,Motorcycle
+11-05-2026,CCTV01,08:27:03,Ford,Metallic Green,Truck
+11-05-2026,CCTV09,08:32:03,Ford,Metallic Green,Truck
+11-05-2026,CCTV08,08:36:54,Ford,Metallic Green,Truck
+11-05-2026,CCTV07,08:38:35,Ford,Metallic Green,Truck
+11-05-2026,CCTV04,08:40:05,Ford,Metallic Green,Truck
+11-05-2026,CCTV03,08:46:03,Hino,Yellow,Bus
+11-05-2026,CCTV04,08:46:44,Hino,Yellow,Bus
+11-05-2026,CCTV04,08:48:11,Aion,Orange,Car
+11-05-2026,CCTV04,09:18:20,Kawasaki,Pink,Motorcycle
+11-05-2026,CCTV04,09:18:59,Mini,Red,Car
+11-05-2026,CCTV01,09:22:26,Mercedes-Benz,Dark Green,Bus
+11-05-2026,CCTV03,09:24:43,Mercedes-Benz,Dark Green,Bus
+11-05-2026,CCTV04,09:26:21,Mercedes-Benz,Dark Green,Bus
+11-05-2026,CCTV08,09:31:45,Mitsubishi,Bronze Gray,Truck
+11-05-2026,CCTV07,09:35:02,Mitsubishi,Bronze Gray,Truck
+11-05-2026,CCTV04,10:10:24,Wuling,Metallic Green,Car
+11-05-2026,CCTV07,10:11:06,Wuling,Metallic Green,Car
+11-05-2026,CCTV08,10:11:57,Wuling,Metallic Green,Car
+11-05-2026,CCTV09,10:15:59,Wuling,Metallic Green,Car
+11-05-2026,CCTV10,10:16:51,Wuling,Metallic Green,Car
+11-05-2026,CCTV01,10:17:49,Isuzu,Yellow,Truck
+11-05-2026,CCTV04,10:44:09,Hino,White,Truck
+11-05-2026,CCTV07,10:49:31,Honda,Gray,Motorcycle
+11-05-2026,CCTV04,10:53:43,Honda,Gray,Motorcycle
+11-05-2026,CCTV03,11:05:22,Yamaha,Bronze Silver,Motorcycle
+11-05-2026,CCTV09,11:06:47,Yamaha,Bronze Silver,Motorcycle
+11-05-2026,CCTV08,11:08:12,Yamaha,Bronze Silver,Motorcycle
+11-05-2026,CCTV07,11:13:12,Yamaha,Bronze Silver,Motorcycle
+11-05-2026,CCTV07,11:25:54,Isuzu,Gold,Truck
+11-05-2026,CCTV07,11:25:56,Mercedes-Benz,Bronze Silver,Bus
+11-05-2026,CCTV09,11:28:35,Mitsubishi,Dark Green,Truck
+11-05-2026,CCTV08,11:32:00,Mitsubishi,Dark Green,Truck
+11-05-2026,CCTV07,11:35:59,Mitsubishi,Dark Green,Truck
+11-05-2026,CCTV04,11:37:13,Mitsubishi,Dark Green,Truck
+11-05-2026,CCTV03,11:45:29,Mitsubishi,Maroon,Truck
+11-05-2026,CCTV09,11:48:30,Mitsubishi,Maroon,Truck
+11-05-2026,CCTV08,11:51:50,Mitsubishi,Maroon,Truck
+11-05-2026,CCTV01,11:52:44,GWM,Yellow-Green,Car
+11-05-2026,CCTV07,11:56:39,Mitsubishi,Maroon,Truck
+11-05-2026,CCTV09,13:13:29,Mazda,Yellow-Green,Car
+11-05-2026,CCTV03,13:14:14,BMW,White,Car
+11-05-2026,CCTV08,13:18:00,Mazda,Yellow-Green,Car
+11-05-2026,CCTV07,13:22:40,Mazda,Yellow-Green,Car
+11-05-2026,CCTV04,13:25:53,Mazda,Yellow-Green,Car
+11-05-2026,CCTV01,13:34:12,BYD,Navy Blue,Car
+11-05-2026,CCTV03,13:44:57,Hino,Chartreuse,Truck
+11-05-2026,CCTV09,13:46:05,Hino,Chartreuse,Truck
+11-05-2026,CCTV08,13:49:06,Hino,Chartreuse,Truck
+11-05-2026,CCTV07,13:52:20,Hino,Chartreuse,Truck
+11-05-2026,CCTV09,14:01:27,Honda,Red-White,Motorcycle
+11-05-2026,CCTV01,14:02:02,Ford,Navy Blue,Truck
+11-05-2026,CCTV08,14:06:00,Honda,Red-White,Motorcycle
+11-05-2026,CCTV07,14:09:27,Honda,Red-White,Motorcycle
+11-05-2026,CCTV04,14:12:28,Honda,Red-White,Motorcycle
+11-05-2026,CCTV04,14:25:58,Isuzu,Bronze Gold,Truck
+11-05-2026,CCTV07,14:33:13,Mazda,Bronze,Car
+11-05-2026,CCTV08,14:36:56,Mazda,Bronze,Car
+11-05-2026,CCTV01,14:37:37,GWM,Slate Blue,Car
+11-05-2026,CCTV09,14:37:43,Mazda,Bronze,Car
+11-05-2026,CCTV10,14:38:33,Mazda,Bronze,Car
+11-05-2026,CCTV03,14:42:03,GWM,Slate Blue,Car
+11-05-2026,CCTV04,14:45:51,GWM,Slate Blue,Car
+11-05-2026,CCTV07,14:54:05,Yamaha,Chartreuse,Motorcycle
+11-05-2026,CCTV08,14:54:43,Yamaha,Chartreuse,Motorcycle
+11-05-2026,CCTV09,14:58:40,Yamaha,Chartreuse,Motorcycle
+11-05-2026,CCTV10,15:03:19,Yamaha,Chartreuse,Motorcycle
+11-05-2026,CCTV04,15:30:35,Hino,Red-White,Truck
+11-05-2026,CCTV07,15:34:23,Hino,Red-White,Truck
+11-05-2026,CCTV08,15:34:59,Hino,Red-White,Truck
+11-05-2026,CCTV09,15:37:41,Hino,Red-White,Truck
+11-05-2026,CCTV10,15:39:44,Hino,Red-White,Truck
+11-05-2026,CCTV01,15:40:19,Isuzu,Chartreuse,Bus
+11-05-2026,CCTV07,15:40:26,Honda,Maroon,Motorcycle
+11-05-2026,CCTV09,15:44:14,Isuzu,Chartreuse,Bus
+11-05-2026,CCTV08,15:45:45,Isuzu,Chartreuse,Bus
+11-05-2026,CCTV07,15:46:55,Isuzu,Chartreuse,Bus
+11-05-2026,CCTV04,15:49:46,Isuzu,Chartreuse,Bus
+11-05-2026,CCTV04,15:58:06,Ford,Olive Green,Truck
+11-05-2026,CCTV03,16:33:02,Toyota,Red-White,Car
+11-05-2026,CCTV01,16:36:29,Toyota,Red-White,Car
+11-05-2026,CCTV10,16:37:03,Toyota,Red-White,Car
+11-05-2026,CCTV03,16:54:42,Yamaha,Slate Blue,Motorcycle
+11-05-2026,CCTV01,16:58:33,Yamaha,Slate Blue,Motorcycle
+11-05-2026,CCTV10,16:59:59,Yamaha,Slate Blue,Motorcycle
+11-05-2026,CCTV01,17:17:28,Chevrolet,Bronze Gold,Car
+11-05-2026,CCTV01,17:23:51,Isuzu,Silver,Truck
+11-05-2026,CCTV09,17:25:27,Isuzu,Silver,Truck
+11-05-2026,CCTV08,17:26:45,Isuzu,Silver,Truck
+11-05-2026,CCTV07,17:29:44,Isuzu,Silver,Truck
+11-05-2026,CCTV04,17:30:44,Isuzu,Silver,Truck
+11-05-2026,CCTV04,17:32:15,Mitsubishi,Slate Blue,Truck
+11-05-2026,CCTV10,17:32:19,BMW,Bronze Gray,Car
+11-05-2026,CCTV07,17:34:43,Mitsubishi,Slate Blue,Truck
+11-05-2026,CCTV09,17:36:27,BMW,Bronze Gray,Car
+11-05-2026,CCTV08,17:36:45,Mitsubishi,Slate Blue,Truck
+11-05-2026,CCTV09,17:38:47,Mitsubishi,Slate Blue,Truck
+11-05-2026,CCTV03,17:41:14,BMW,Bronze Gray,Car
+11-05-2026,CCTV10,17:42:23,Mitsubishi,Slate Blue,Truck
+11-05-2026,CCTV04,17:45:26,BMW,Bronze Gray,Car
+11-05-2026,CCTV09,17:49:25,Mercedes-Benz,Bronze,Bus
+11-05-2026,CCTV07,18:05:25,GWM,Gray,Car
+11-05-2026,CCTV04,18:10:01,GWM,Gray,Car
+11-05-2026,CCTV10,18:21:31,Mercedes-Benz,Bronze Gray,Car
+11-05-2026,CCTV08,18:34:37,Hino,White,Bus
+11-05-2026,CCTV07,18:34:52,Subaru,Bronze Gold,Car
+11-05-2026,CCTV08,18:39:20,Subaru,Bronze Gold,Car
+11-05-2026,CCTV09,18:43:24,Subaru,Bronze Gold,Car
+11-05-2026,CCTV10,18:45:26,Subaru,Bronze Gold,Car
+11-05-2026,CCTV03,19:20:26,Kawasaki,Bronze,Motorcycle
+11-05-2026,CCTV09,19:24:35,Kawasaki,Bronze,Motorcycle
+11-05-2026,CCTV08,19:28:42,Kawasaki,Bronze,Motorcycle
+11-05-2026,CCTV07,19:29:19,Kawasaki,Bronze,Motorcycle
+11-05-2026,CCTV04,19:32:03,Honda,Light Green,Motorcycle
+11-05-2026,CCTV07,19:35:25,Honda,Light Green,Motorcycle
+11-05-2026,CCTV08,19:38:17,Honda,Light Green,Motorcycle
+11-05-2026,CCTV09,19:40:56,Honda,Light Green,Motorcycle
+11-05-2026,CCTV10,19:42:25,Honda,Light Green,Motorcycle
+11-05-2026,CCTV04,20:15:34,Mercedes-Benz,Chartreuse,Bus
+11-05-2026,CCTV10,20:24:35,Isuzu,Orange,Bus
+11-05-2026,CCTV09,20:26:08,Isuzu,Orange,Bus
+11-05-2026,CCTV03,20:27:01,Isuzu,Orange,Bus
+11-05-2026,CCTV04,20:28:38,Isuzu,Orange,Bus
+11-05-2026,CCTV08,21:15:39,Kawasaki,Red-White,Motorcycle
+11-05-2026,CCTV01,21:31:03,Mercedes-Benz,Charcoal,Bus
+11-05-2026,CCTV09,21:32:54,Mercedes-Benz,Charcoal,Bus
+11-05-2026,CCTV08,21:36:15,Mercedes-Benz,Charcoal,Bus
+11-05-2026,CCTV07,21:40:47,Mercedes-Benz,Charcoal,Bus
+11-05-2026,CCTV04,21:42:08,Mercedes-Benz,Charcoal,Bus
+11-05-2026,CCTV08,21:48:26,Ford,Chartreuse,Truck
+11-05-2026,CCTV07,21:50:21,Ford,Chartreuse,Truck
+11-05-2026,CCTV10,22:27:38,Hino,Bronze Silver,Bus
+11-05-2026,CCTV09,22:28:58,Hino,Bronze Silver,Bus
+11-05-2026,CCTV08,22:29:44,Hino,Bronze Silver,Bus
+11-05-2026,CCTV07,22:30:37,Hino,Bronze Silver,Bus
+11-05-2026,CCTV10,22:31:51,Honda,Bronze,Motorcycle
+11-05-2026,CCTV03,22:32:58,Hino,Maroon,Bus
+11-05-2026,CCTV09,22:36:15,Honda,Bronze,Motorcycle
+11-05-2026,CCTV10,22:36:26,Hino,Yellow,Truck
+11-05-2026,CCTV08,22:36:58,Honda,Bronze,Motorcycle
+11-05-2026,CCTV09,22:37:37,Hino,Yellow,Truck
+11-05-2026,CCTV07,22:39:44,Honda,Bronze,Motorcycle
+11-05-2026,CCTV03,22:39:44,Hino,Yellow,Truck
+11-05-2026,CCTV04,22:44:19,Hino,Yellow,Truck
+11-05-2026,CCTV01,22:52:06,BMW,Bronze Silver,Car
+11-05-2026,CCTV03,22:59:50,Honda,Dark Green,Motorcycle
+11-05-2026,CCTV04,23:28:25,Hino,Chartreuse,Truck
+11-05-2026,CCTV07,23:29:23,Hino,Chartreuse,Truck
+11-05-2026,CCTV08,23:32:03,Hino,Chartreuse,Truck
+11-05-2026,CCTV09,23:35:08,Hino,Chartreuse,Truck
+11-05-2026,CCTV10,23:36:17,Hino,Chartreuse,Truck
+11-05-2026,CCTV04,23:37:07,Mercedes-Benz,Navy Blue,Bus
+12-05-2026,CCTV04,00:35:28,Yamaha,Chartreuse,Motorcycle
+12-05-2026,CCTV07,00:36:31,Yamaha,Chartreuse,Motorcycle
+12-05-2026,CCTV10,00:38:03,Hino,Olive Green,Truck
+12-05-2026,CCTV08,00:39:19,Yamaha,Chartreuse,Motorcycle
+12-05-2026,CCTV09,00:39:54,Yamaha,Chartreuse,Motorcycle
+12-05-2026,CCTV09,00:41:56,Hino,Olive Green,Truck
+12-05-2026,CCTV03,00:44:02,Hino,Olive Green,Truck
+12-05-2026,CCTV04,00:46:06,Hino,Olive Green,Truck
+12-05-2026,CCTV04,00:57:19,Mitsubishi,Red-White,Truck
+12-05-2026,CCTV07,01:40:05,Honda,Pink,Motorcycle
+12-05-2026,CCTV03,02:23:58,Honda,Charcoal,Motorcycle
+12-05-2026,CCTV09,02:25:28,Honda,Charcoal,Motorcycle
+12-05-2026,CCTV08,02:27:35,Honda,Charcoal,Motorcycle
+12-05-2026,CCTV07,02:28:14,Honda,Charcoal,Motorcycle
+12-05-2026,CCTV04,02:37:48,Mercedes-Benz,Red,Bus
+12-05-2026,CCTV07,02:39:07,Mercedes-Benz,Red,Bus
+12-05-2026,CCTV08,02:40:02,Mercedes-Benz,Red,Bus
+12-05-2026,CCTV09,02:41:11,Mercedes-Benz,Red,Bus
+12-05-2026,CCTV10,02:42:36,Ford,Red-White,Truck
+12-05-2026,CCTV04,02:48:49,Hino,Bronze,Truck
+12-05-2026,CCTV07,02:51:51,Hino,Bronze,Truck
+12-05-2026,CCTV08,02:56:21,Hino,Bronze,Truck
+12-05-2026,CCTV09,02:58:19,Hino,Bronze,Truck
+12-05-2026,CCTV04,03:23:48,Hino,Navy Blue,Bus
+12-05-2026,CCTV04,03:40:57,Nissan,Light Green,Car
+12-05-2026,CCTV07,03:45:33,Nissan,Light Green,Car
+12-05-2026,CCTV08,03:46:31,Nissan,Light Green,Car
+12-05-2026,CCTV09,03:47:26,Nissan,Light Green,Car
+12-05-2026,CCTV03,04:03:39,MG,Dark Green,Car
+12-05-2026,CCTV01,04:08:04,MG,Dark Green,Car
+12-05-2026,CCTV10,04:11:22,MG,Dark Green,Car
+12-05-2026,CCTV01,04:12:31,Honda,Pink,Motorcycle
+12-05-2026,CCTV09,04:31:09,Mercedes-Benz,Dark Green,Bus
+12-05-2026,CCTV08,04:32:17,Mercedes-Benz,Dark Green,Bus
+12-05-2026,CCTV07,04:33:07,Mercedes-Benz,Dark Green,Bus
+12-05-2026,CCTV04,04:34:07,Mercedes-Benz,Dark Green,Bus
+12-05-2026,CCTV04,04:51:46,Isuzu,Slate Blue,Truck
+12-05-2026,CCTV10,05:01:21,Proton,Light Green,Car
+12-05-2026,CCTV09,05:06:13,Proton,Light Green,Car
+12-05-2026,CCTV03,05:07:26,Proton,Light Green,Car
+12-05-2026,CCTV04,05:09:06,Proton,Light Green,Car
+12-05-2026,CCTV07,05:20:56,Honda,Yellow-Green,Car
+12-05-2026,CCTV04,05:22:20,Honda,Yellow-Green,Car
+12-05-2026,CCTV09,06:07:57,Isuzu,Metallic Green,Bus
+12-05-2026,CCTV01,06:23:35,Mercedes-Benz,Chartreuse,Bus
+12-05-2026,CCTV09,06:28:29,Mercedes-Benz,Chartreuse,Bus
+12-05-2026,CCTV08,06:29:20,Mercedes-Benz,Chartreuse,Bus
+12-05-2026,CCTV07,06:34:05,Mercedes-Benz,Chartreuse,Bus
+12-05-2026,CCTV04,06:35:59,Mercedes-Benz,Chartreuse,Bus
+12-05-2026,CCTV10,07:07:45,Kawasaki,Bronze,Motorcycle
+12-05-2026,CCTV01,07:07:54,Neta,White,Car
+12-05-2026,CCTV03,07:09:36,Neta,White,Car
+12-05-2026,CCTV09,07:10:56,Kawasaki,Bronze,Motorcycle
+12-05-2026,CCTV04,07:13:08,Neta,White,Car
+12-05-2026,CCTV10,07:13:11,Kawasaki,Orange,Motorcycle
+12-05-2026,CCTV07,07:13:39,Isuzu,Green,Truck
+12-05-2026,CCTV03,07:14:17,Kawasaki,Bronze,Motorcycle
+12-05-2026,CCTV09,07:15:14,Kawasaki,Orange,Motorcycle
+12-05-2026,CCTV08,07:17:44,Kawasaki,Orange,Motorcycle
+12-05-2026,CCTV07,07:18:30,Kawasaki,Orange,Motorcycle
+12-05-2026,CCTV04,07:18:33,Kawasaki,Bronze,Motorcycle
+12-05-2026,CCTV07,07:21:31,Mitsubishi,Maroon,Truck
+12-05-2026,CCTV04,07:23:45,Mitsubishi,Maroon,Truck
+12-05-2026,CCTV04,07:26:38,Suzuki,Dark Green,Motorcycle
+12-05-2026,CCTV09,08:13:24,Yamaha,Olive Green,Motorcycle
+12-05-2026,CCTV08,08:23:50,Mitsubishi,Gold,Truck
+12-05-2026,CCTV01,08:47:31,Hino,White,Truck
+12-05-2026,CCTV03,09:44:11,Suzuki,Orange,Motorcycle
+12-05-2026,CCTV09,09:45:49,Suzuki,Orange,Motorcycle
+12-05-2026,CCTV08,09:50:27,Suzuki,Orange,Motorcycle
+12-05-2026,CCTV07,09:50:59,Suzuki,Orange,Motorcycle
+12-05-2026,CCTV10,09:51:47,Hino,Silver,Truck
+12-05-2026,CCTV09,10:15:01,Hino,Black,Bus
+12-05-2026,CCTV10,10:59:50,Mercedes-Benz,Bronze Gold,Car
+12-05-2026,CCTV09,11:00:35,Mercedes-Benz,Bronze Gold,Car
+12-05-2026,CCTV08,11:02:44,Mercedes-Benz,Bronze Gold,Car
+12-05-2026,CCTV07,11:04:04,Mercedes-Benz,Bronze Gold,Car
+12-05-2026,CCTV01,11:06:53,Hino,Maroon,Bus
+12-05-2026,CCTV03,11:07:27,Hino,Maroon,Bus
+12-05-2026,CCTV07,11:08:12,Suzuki,Maroon,Car
+12-05-2026,CCTV04,11:09:25,Hino,Maroon,Bus
+12-05-2026,CCTV03,11:49:56,Honda,Olive Green,Motorcycle
+12-05-2026,CCTV01,11:50:34,Honda,Olive Green,Motorcycle
+12-05-2026,CCTV01,11:51:50,Isuzu,Olive Green,Truck
+12-05-2026,CCTV03,11:52:50,Isuzu,Olive Green,Truck
+12-05-2026,CCTV04,11:54:20,Isuzu,Olive Green,Truck
+12-05-2026,CCTV10,11:55:04,Honda,Olive Green,Motorcycle
+12-05-2026,CCTV04,11:59:58,Mitsubishi,Dark Green,Car
+12-05-2026,CCTV07,12:00:50,Haval,Yellow-Green,Car
+12-05-2026,CCTV03,13:08:32,Hino,Black,Truck
+12-05-2026,CCTV04,13:12:11,Hino,Black,Truck
+12-05-2026,CCTV04,13:32:20,Isuzu,Navy Blue,Bus
+12-05-2026,CCTV07,13:35:45,Isuzu,Navy Blue,Bus
+12-05-2026,CCTV08,13:36:20,Isuzu,Navy Blue,Bus
+12-05-2026,CCTV09,13:37:26,Isuzu,Navy Blue,Bus
+12-05-2026,CCTV07,14:34:17,Jaecoo,Olive Green,Car
+12-05-2026,CCTV04,14:36:46,Jaecoo,Olive Green,Car
+12-05-2026,CCTV03,14:40:12,Isuzu,Black,Bus
+12-05-2026,CCTV01,14:40:50,Isuzu,Black,Bus
+12-05-2026,CCTV10,14:41:23,Isuzu,Black,Bus
+12-05-2026,CCTV01,14:43:49,Mitsubishi,Blue,Truck
+12-05-2026,CCTV08,15:03:52,Kawasaki,Blue-White,Motorcycle
+12-05-2026,CCTV09,15:04:01,Mitsubishi,Yellow,Truck
+12-05-2026,CCTV03,15:08:36,Yamaha,Bronze,Motorcycle
+12-05-2026,CCTV04,15:09:56,Yamaha,Bronze,Motorcycle
+12-05-2026,CCTV07,15:14:00,Isuzu,Green,Bus
+12-05-2026,CCTV04,15:14:52,Isuzu,Green,Bus
+12-05-2026,CCTV03,15:17:57,Suzuki,Green,Motorcycle
+12-05-2026,CCTV01,15:20:57,Suzuki,Green,Motorcycle
+12-05-2026,CCTV10,15:24:22,Suzuki,Green,Motorcycle
+12-05-2026,CCTV03,15:55:19,Mitsubishi,Bronze Gold,Truck
+12-05-2026,CCTV04,15:58:52,Hino,Yellow,Bus
+12-05-2026,CCTV07,16:01:19,Hino,Yellow,Bus
+12-05-2026,CCTV08,16:01:57,Hino,Yellow,Bus
+12-05-2026,CCTV09,16:03:08,Hino,Yellow,Bus
+12-05-2026,CCTV08,16:18:08,Honda,Gold,Motorcycle
+12-05-2026,CCTV03,16:19:21,Mercedes-Benz,Green,Bus
+12-05-2026,CCTV09,16:23:31,Mitsubishi,Light Green,Truck
+12-05-2026,CCTV09,16:23:45,Mercedes-Benz,Green,Bus
+12-05-2026,CCTV08,16:25:09,Mitsubishi,Light Green,Truck
+12-05-2026,CCTV07,16:27:08,Mitsubishi,Light Green,Truck
+12-05-2026,CCTV08,16:27:25,Mercedes-Benz,Green,Bus
+12-05-2026,CCTV04,16:28:25,Mitsubishi,Light Green,Truck
+12-05-2026,CCTV08,16:31:13,Hino,Navy Blue,Bus
+12-05-2026,CCTV07,16:31:50,Mercedes-Benz,Green,Bus
+12-05-2026,CCTV09,16:49:26,Suzuki,Bronze,Motorcycle
+12-05-2026,CCTV10,17:26:34,Kawasaki,Bronze Gold,Motorcycle
+12-05-2026,CCTV09,17:30:05,Kawasaki,Bronze Gold,Motorcycle
+12-05-2026,CCTV03,17:34:27,Kawasaki,Bronze Gold,Motorcycle
+12-05-2026,CCTV04,17:37:48,Kawasaki,Bronze Gold,Motorcycle
+12-05-2026,CCTV10,18:20:13,Mitsubishi,White,Truck
+12-05-2026,CCTV09,18:23:02,Mitsubishi,White,Truck
+12-05-2026,CCTV09,18:26:07,Mercedes-Benz,Gold,Bus
+12-05-2026,CCTV08,18:26:31,Mitsubishi,White,Truck
+12-05-2026,CCTV08,18:26:55,Mercedes-Benz,Gold,Bus
+12-05-2026,CCTV07,18:28:55,Mercedes-Benz,Gold,Bus
+12-05-2026,CCTV07,18:30:39,Mitsubishi,White,Truck
+12-05-2026,CCTV04,18:33:14,Mercedes-Benz,Gold,Bus
+12-05-2026,CCTV08,18:33:52,Suzuki,Maroon,Motorcycle
+12-05-2026,CCTV07,18:38:39,Suzuki,Maroon,Motorcycle
+12-05-2026,CCTV03,18:53:07,Yamaha,Blue-White,Motorcycle
+12-05-2026,CCTV01,19:10:22,Hino,Maroon,Bus
+12-05-2026,CCTV03,19:11:29,Hino,Maroon,Bus
+12-05-2026,CCTV04,19:12:58,Hino,Maroon,Bus
+12-05-2026,CCTV01,19:16:48,Mitsubishi,Orange,Truck
+12-05-2026,CCTV08,19:51:14,Mini,Bronze,Car
+12-05-2026,CCTV07,19:52:36,Mini,Bronze,Car
+12-05-2026,CCTV10,20:04:57,Yamaha,Bronze Gray,Motorcycle
+12-05-2026,CCTV10,20:06:02,Ford,Dark Green,Truck
+12-05-2026,CCTV09,20:06:48,Ford,Dark Green,Truck
+12-05-2026,CCTV03,20:07:59,Ford,Dark Green,Truck
+12-05-2026,CCTV04,20:09:34,Ford,Dark Green,Truck
+12-05-2026,CCTV07,20:19:30,Yamaha,Red,Motorcycle
+12-05-2026,CCTV04,20:20:10,Yamaha,Red,Motorcycle
+12-05-2026,CCTV04,21:00:37,Volkswagen,Metallic Green,Car
+12-05-2026,CCTV03,21:02:49,Volkswagen,Metallic Green,Car
+12-05-2026,CCTV01,21:04:28,Volkswagen,Metallic Green,Car
+12-05-2026,CCTV04,21:04:46,Mitsubishi,Light Green,Truck
+12-05-2026,CCTV03,21:28:13,Mercedes-Benz,Bronze Gold,Bus
+12-05-2026,CCTV09,21:29:01,Mercedes-Benz,Bronze Gold,Bus
+12-05-2026,CCTV08,21:32:59,Mercedes-Benz,Bronze Gold,Bus
+12-05-2026,CCTV07,21:37:25,Mercedes-Benz,Bronze Gold,Bus
+12-05-2026,CCTV03,21:43:36,Kawasaki,Navy Blue,Motorcycle
+12-05-2026,CCTV01,21:44:46,Kawasaki,Navy Blue,Motorcycle
+12-05-2026,CCTV10,21:46:11,Kawasaki,Navy Blue,Motorcycle
+12-05-2026,CCTV10,22:05:02,Ford,Bronze,Truck
+12-05-2026,CCTV09,22:09:24,Ford,Bronze,Truck
+12-05-2026,CCTV03,22:10:16,Ford,Bronze,Truck
+12-05-2026,CCTV04,22:14:00,Ford,Bronze,Truck
+12-05-2026,CCTV09,22:27:13,Toyota,Red,Car
+12-05-2026,CCTV10,22:27:57,Chevrolet,Dark Green,Car
+12-05-2026,CCTV08,22:29:56,Toyota,Red,Car
+12-05-2026,CCTV07,22:30:56,Toyota,Red,Car
+12-05-2026,CCTV04,22:34:20,Toyota,Red,Car
+12-05-2026,CCTV09,22:34:29,Suzuki,Metallic Green,Motorcycle
+12-05-2026,CCTV09,22:36:17,Hino,Maroon,Truck
+12-05-2026,CCTV08,22:36:53,Hino,Maroon,Truck
+12-05-2026,CCTV07,22:38:23,Hino,Maroon,Truck
+12-05-2026,CCTV04,22:41:10,Hino,Maroon,Truck
+12-05-2026,CCTV08,22:49:25,Hino,Black,Truck
+12-05-2026,CCTV07,22:52:07,Hino,Black,Truck
+12-05-2026,CCTV01,22:52:16,Hino,Chartreuse,Bus
+12-05-2026,CCTV03,22:53:59,Hino,Chartreuse,Bus
+12-05-2026,CCTV04,22:58:12,Hino,Chartreuse,Bus
+12-05-2026,CCTV03,23:54:44,Isuzu,Yellow-Green,Bus
+13-05-2026,CCTV01,00:03:19,Ford,Gray,Truck
+13-05-2026,CCTV10,00:04:25,Isuzu,Gold,Bus
+13-05-2026,CCTV03,00:04:57,Ford,Gray,Truck
+13-05-2026,CCTV04,00:07:07,Ford,Gray,Truck
+13-05-2026,CCTV03,00:46:28,Mitsubishi,Dark Green,Truck
+13-05-2026,CCTV09,00:47:39,Mitsubishi,Dark Green,Truck
+13-05-2026,CCTV08,00:48:20,Mitsubishi,Dark Green,Truck
+13-05-2026,CCTV07,00:50:11,Mitsubishi,Dark Green,Truck
+13-05-2026,CCTV10,01:06:22,Kawasaki,Pink,Motorcycle
+13-05-2026,CCTV04,01:35:36,Isuzu,Olive Green,Truck
+13-05-2026,CCTV03,01:40:32,Isuzu,Olive Green,Truck
+13-05-2026,CCTV01,01:44:56,Isuzu,Olive Green,Truck
+13-05-2026,CCTV09,02:06:28,Suzuki,Pink,Motorcycle
+13-05-2026,CCTV10,02:09:06,Isuzu,Gold,Bus
+13-05-2026,CCTV08,02:10:14,Suzuki,Pink,Motorcycle
+13-05-2026,CCTV07,02:11:04,Suzuki,Pink,Motorcycle
+13-05-2026,CCTV04,02:12:07,Suzuki,Pink,Motorcycle
+13-05-2026,CCTV08,03:03:19,Isuzu,Chartreuse,Truck
+13-05-2026,CCTV07,03:05:46,Isuzu,Chartreuse,Truck
+13-05-2026,CCTV10,03:28:25,Ford,Red-White,Truck
+13-05-2026,CCTV09,03:32:48,Ford,Red-White,Truck
+13-05-2026,CCTV03,03:34:52,Ford,Red-White,Truck
+13-05-2026,CCTV03,03:38:28,Hino,Blue-White,Bus
+13-05-2026,CCTV04,03:39:18,Ford,Red-White,Truck
+13-05-2026,CCTV09,03:39:21,Hino,Blue-White,Bus
+13-05-2026,CCTV08,03:42:52,Hino,Blue-White,Bus
+13-05-2026,CCTV08,03:43:36,Mitsubishi,Light Green,Truck
+13-05-2026,CCTV07,03:43:51,Hino,Blue-White,Bus
+13-05-2026,CCTV09,03:49:52,Isuzu,Red-White,Bus
+13-05-2026,CCTV04,04:12:35,Peugeot,Olive Green,Car
+13-05-2026,CCTV07,04:18:28,Hino,Bronze,Bus
+13-05-2026,CCTV08,04:23:08,Hino,Red-White,Truck
+13-05-2026,CCTV10,04:40:51,Yamaha,Yellow,Motorcycle
+13-05-2026,CCTV03,05:01:41,Mercedes-Benz,Black,Bus
+13-05-2026,CCTV01,05:04:41,Mercedes-Benz,Black,Bus
+13-05-2026,CCTV09,05:05:43,Suzuki,Green,Motorcycle
+13-05-2026,CCTV10,05:06:07,Mercedes-Benz,Black,Bus
+13-05-2026,CCTV03,05:06:51,Jaecoo,Navy Blue,Car
+13-05-2026,CCTV09,05:10:56,Jaecoo,Navy Blue,Car
+13-05-2026,CCTV08,05:13:44,Jaecoo,Navy Blue,Car
+13-05-2026,CCTV07,05:14:21,Jaecoo,Navy Blue,Car
+13-05-2026,CCTV04,05:16:07,Nissan,Blue-White,Car
+13-05-2026,CCTV07,05:18:48,Nissan,Blue-White,Car
+13-05-2026,CCTV08,05:22:46,Nissan,Blue-White,Car
+13-05-2026,CCTV09,05:26:04,Nissan,Blue-White,Car
+13-05-2026,CCTV04,05:35:00,Isuzu,Metallic Green,Bus
+13-05-2026,CCTV07,06:31:07,Mini,Chartreuse,Car
+13-05-2026,CCTV08,06:31:50,Mini,Chartreuse,Car
+13-05-2026,CCTV09,06:34:59,Mini,Chartreuse,Car
+13-05-2026,CCTV10,06:37:15,Mini,Chartreuse,Car
+13-05-2026,CCTV07,06:46:15,Yamaha,Bronze,Motorcycle
+13-05-2026,CCTV04,06:49:50,Yamaha,Bronze,Motorcycle
+13-05-2026,CCTV09,06:55:25,Hino,Green,Truck
+13-05-2026,CCTV07,06:57:09,Hino,Orange,Bus
+13-05-2026,CCTV01,07:25:17,Isuzu,Dark Green,Bus
+13-05-2026,CCTV03,07:27:18,Isuzu,Dark Green,Bus
+13-05-2026,CCTV04,07:27:49,Isuzu,Dark Green,Bus
+13-05-2026,CCTV10,07:41:28,MG,Green,Car
+13-05-2026,CCTV04,07:57:15,Isuzu,Black,Truck
+13-05-2026,CCTV07,08:02:02,Isuzu,Black,Truck
+13-05-2026,CCTV08,08:03:10,Isuzu,Black,Truck
+13-05-2026,CCTV04,08:03:24,Volkswagen,Bronze Gray,Car
+13-05-2026,CCTV09,08:04:22,Isuzu,Black,Truck
+13-05-2026,CCTV10,08:06:01,Isuzu,Black,Truck
+13-05-2026,CCTV03,08:07:39,Volkswagen,Bronze Gray,Car
+13-05-2026,CCTV01,08:10:00,Volkswagen,Bronze Gray,Car
+13-05-2026,CCTV03,08:41:52,Volkswagen,Pink,Car
+13-05-2026,CCTV07,08:46:47,Mercedes-Benz,Bronze Silver,Bus
+13-05-2026,CCTV04,08:49:18,Mercedes-Benz,Bronze Silver,Bus
+13-05-2026,CCTV08,08:57:09,Subaru,Metallic Green,Car
+13-05-2026,CCTV03,09:02:10,Hino,Silver,Truck
+13-05-2026,CCTV03,09:29:57,Hino,White,Bus
+13-05-2026,CCTV07,09:32:33,Ford,Navy Blue,Truck
+13-05-2026,CCTV08,09:36:34,Ford,Navy Blue,Truck
+13-05-2026,CCTV09,09:40:48,Ford,Navy Blue,Truck
+13-05-2026,CCTV10,09:43:51,Ford,Navy Blue,Truck
+13-05-2026,CCTV03,10:15:20,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV01,10:17:38,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV10,10:22:35,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV10,10:47:24,Mazda,Red,Car
+13-05-2026,CCTV01,10:50:34,Isuzu,Red-White,Bus
+13-05-2026,CCTV01,11:27:09,Mitsubishi,White,Truck
+13-05-2026,CCTV09,11:27:44,Mitsubishi,White,Truck
+13-05-2026,CCTV08,11:29:45,Mitsubishi,White,Truck
+13-05-2026,CCTV07,11:32:37,Mitsubishi,White,Truck
+13-05-2026,CCTV03,11:32:41,Suzuki,Red,Motorcycle
+13-05-2026,CCTV09,11:35:40,Suzuki,Red,Motorcycle
+13-05-2026,CCTV04,11:35:55,Mitsubishi,White,Truck
+13-05-2026,CCTV08,11:36:20,Suzuki,Red,Motorcycle
+13-05-2026,CCTV07,11:37:01,Suzuki,Red,Motorcycle
+13-05-2026,CCTV01,11:38:18,Hino,Yellow,Bus
+13-05-2026,CCTV03,11:38:57,Hino,Yellow,Bus
+13-05-2026,CCTV04,11:40:10,Hino,Yellow,Bus
+13-05-2026,CCTV01,11:54:01,Mercedes-Benz,Chartreuse,Car
+13-05-2026,CCTV09,11:54:31,Mercedes-Benz,Chartreuse,Car
+13-05-2026,CCTV10,11:55:29,Yamaha,Yellow,Motorcycle
+13-05-2026,CCTV08,11:55:43,Mercedes-Benz,Chartreuse,Car
+13-05-2026,CCTV09,11:58:38,Yamaha,Yellow,Motorcycle
+13-05-2026,CCTV07,11:58:43,Mercedes-Benz,Chartreuse,Car
+13-05-2026,CCTV03,12:00:22,Yamaha,Yellow,Motorcycle
+13-05-2026,CCTV04,12:01:20,Mercedes-Benz,Chartreuse,Car
+13-05-2026,CCTV04,12:05:20,Yamaha,Yellow,Motorcycle
+13-05-2026,CCTV09,12:15:09,Kawasaki,Green,Motorcycle
+13-05-2026,CCTV01,12:15:10,Proton,Yellow,Car
+13-05-2026,CCTV09,12:19:05,Proton,Yellow,Car
+13-05-2026,CCTV04,12:19:28,Mini,Silver,Car
+13-05-2026,CCTV08,12:20:40,Proton,Yellow,Car
+13-05-2026,CCTV07,12:23:00,Mini,Silver,Car
+13-05-2026,CCTV07,12:23:32,Proton,Yellow,Car
+13-05-2026,CCTV08,12:24:30,Mini,Silver,Car
+13-05-2026,CCTV04,12:27:19,Proton,Yellow,Car
+13-05-2026,CCTV09,12:28:14,Mini,Silver,Car
+13-05-2026,CCTV10,12:33:07,Mini,Silver,Car
+13-05-2026,CCTV10,12:42:09,Yamaha,Red,Motorcycle
+13-05-2026,CCTV03,13:37:33,GWM,Yellow,Car
+13-05-2026,CCTV01,13:38:43,GWM,Yellow,Car
+13-05-2026,CCTV10,13:40:15,GWM,Yellow,Car
+13-05-2026,CCTV09,13:48:38,Peugeot,White,Car
+13-05-2026,CCTV01,13:53:38,Hino,Light Green,Truck
+13-05-2026,CCTV03,14:12:44,Isuzu,Bronze Gray,Truck
+13-05-2026,CCTV01,14:15:21,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV09,14:16:30,Isuzu,Bronze Gray,Truck
+13-05-2026,CCTV03,14:20:03,Suzuki,Metallic Green,Motorcycle
+13-05-2026,CCTV09,14:20:05,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV08,14:20:59,Isuzu,Bronze Gray,Truck
+13-05-2026,CCTV07,14:21:36,Isuzu,Bronze Gray,Truck
+13-05-2026,CCTV09,14:23:23,Suzuki,Metallic Green,Motorcycle
+13-05-2026,CCTV08,14:23:47,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV08,14:25:40,Suzuki,Metallic Green,Motorcycle
+13-05-2026,CCTV07,14:26:46,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV07,14:27:39,Suzuki,Metallic Green,Motorcycle
+13-05-2026,CCTV04,14:28:17,Honda,Blue-White,Motorcycle
+13-05-2026,CCTV03,14:38:11,Honda,Charcoal,Motorcycle
+13-05-2026,CCTV01,14:39:13,Honda,Charcoal,Motorcycle
+13-05-2026,CCTV10,14:43:52,Honda,Charcoal,Motorcycle
+13-05-2026,CCTV01,15:07:21,GWM,Red-White,Car
+13-05-2026,CCTV10,15:20:58,Honda,Maroon,Motorcycle
+13-05-2026,CCTV09,15:23:12,Honda,Maroon,Motorcycle
+13-05-2026,CCTV03,15:26:10,Honda,Maroon,Motorcycle
+13-05-2026,CCTV04,15:29:33,Honda,Maroon,Motorcycle
+13-05-2026,CCTV01,15:38:26,Yamaha,Chartreuse,Motorcycle
+13-05-2026,CCTV03,15:40:33,Yamaha,Chartreuse,Motorcycle
+13-05-2026,CCTV03,15:41:49,Tesla,Pink,Car
+13-05-2026,CCTV04,15:44:16,Yamaha,Chartreuse,Motorcycle
+13-05-2026,CCTV10,16:09:12,Mitsubishi,Blue-White,Truck
+13-05-2026,CCTV03,16:19:47,Hino,Metallic Green,Truck
+13-05-2026,CCTV07,17:13:57,Yamaha,Bronze Gold,Motorcycle
+13-05-2026,CCTV08,17:14:50,Yamaha,Bronze Gold,Motorcycle
+13-05-2026,CCTV09,17:15:38,Yamaha,Bronze Gold,Motorcycle
+13-05-2026,CCTV10,17:17:03,Yamaha,Bronze Gold,Motorcycle
+13-05-2026,CCTV01,17:29:32,GWM,White,Car
+13-05-2026,CCTV09,17:30:19,GWM,White,Car
+13-05-2026,CCTV08,17:33:25,GWM,White,Car
+13-05-2026,CCTV07,17:36:12,GWM,White,Car
+13-05-2026,CCTV04,17:37:38,GWM,White,Car
+13-05-2026,CCTV04,18:08:09,Hino,Chartreuse,Bus
+13-05-2026,CCTV07,18:11:20,Hino,Chartreuse,Bus
+13-05-2026,CCTV03,18:12:52,Hino,Red-White,Truck
+13-05-2026,CCTV09,18:13:47,Hino,Red-White,Truck
+13-05-2026,CCTV08,18:16:00,Hino,Red-White,Truck
+13-05-2026,CCTV08,18:16:09,Hino,Chartreuse,Bus
+13-05-2026,CCTV07,18:16:33,Hino,Red-White,Truck
+13-05-2026,CCTV09,18:17:29,Hino,Chartreuse,Bus
+13-05-2026,CCTV01,18:30:30,BYD,Orange,Car
+13-05-2026,CCTV09,18:31:28,BYD,Orange,Car
+13-05-2026,CCTV03,18:32:04,Kawasaki,Red-White,Motorcycle
+13-05-2026,CCTV09,18:32:47,Kawasaki,Red-White,Motorcycle
+13-05-2026,CCTV08,18:33:18,BYD,Orange,Car
+13-05-2026,CCTV07,18:34:50,BYD,Orange,Car
+13-05-2026,CCTV08,18:35:04,Kawasaki,Red-White,Motorcycle
+13-05-2026,CCTV04,18:35:20,BYD,Orange,Car
+13-05-2026,CCTV07,18:38:55,Kawasaki,Red-White,Motorcycle
+13-05-2026,CCTV03,18:42:24,Subaru,Bronze Silver,Car
+13-05-2026,CCTV09,18:43:58,Subaru,Bronze Silver,Car
+13-05-2026,CCTV08,18:44:51,Subaru,Bronze Silver,Car
+13-05-2026,CCTV07,18:45:44,Subaru,Bronze Silver,Car
+13-05-2026,CCTV09,19:08:20,Tesla,Bronze Gold,Car
+13-05-2026,CCTV08,19:10:49,Tesla,Bronze Gold,Car
+13-05-2026,CCTV01,19:11:38,Hino,Slate Blue,Bus
+13-05-2026,CCTV07,19:13:49,Tesla,Bronze Gold,Car
+13-05-2026,CCTV03,19:15:58,Hino,Slate Blue,Bus
+13-05-2026,CCTV04,19:17:09,Tesla,Bronze Gold,Car
+13-05-2026,CCTV04,19:20:17,Hino,Slate Blue,Bus
+13-05-2026,CCTV04,19:45:17,Isuzu,Bronze Gray,Bus
+13-05-2026,CCTV10,20:06:12,Yamaha,Maroon,Motorcycle
+13-05-2026,CCTV09,20:08:19,Yamaha,Maroon,Motorcycle
+13-05-2026,CCTV03,20:09:57,Yamaha,Maroon,Motorcycle
+13-05-2026,CCTV04,20:11:38,Yamaha,Maroon,Motorcycle
+13-05-2026,CCTV03,20:34:04,Hino,Olive Green,Bus
+13-05-2026,CCTV01,20:35:53,Hino,Olive Green,Bus
+13-05-2026,CCTV10,20:39:58,Hino,Olive Green,Bus
+13-05-2026,CCTV03,21:32:40,Hino,Orange,Bus
+13-05-2026,CCTV04,21:36:29,Hino,Orange,Bus
+13-05-2026,CCTV10,21:41:08,Mercedes-Benz,Chartreuse,Bus
+13-05-2026,CCTV10,21:43:31,Mercedes-Benz,Green,Bus
+13-05-2026,CCTV09,21:44:55,Mercedes-Benz,Green,Bus
+13-05-2026,CCTV03,21:48:09,Mercedes-Benz,Green,Bus
+13-05-2026,CCTV04,21:50:12,Mercedes-Benz,Green,Bus
+13-05-2026,CCTV07,22:24:20,Kawasaki,Orange,Motorcycle
+13-05-2026,CCTV08,22:29:13,Kawasaki,Orange,Motorcycle
+13-05-2026,CCTV09,22:29:52,Kawasaki,Orange,Motorcycle
+13-05-2026,CCTV04,22:30:21,Isuzu,Maroon,Bus
+13-05-2026,CCTV07,22:31:44,Isuzu,Maroon,Bus
+13-05-2026,CCTV10,22:34:32,Kawasaki,Orange,Motorcycle
+13-05-2026,CCTV08,22:34:36,Isuzu,Maroon,Bus
+13-05-2026,CCTV09,22:35:48,Isuzu,Maroon,Bus
+13-05-2026,CCTV10,22:38:11,Isuzu,Maroon,Bus
+13-05-2026,CCTV03,22:46:16,Chevrolet,Black,Car
+13-05-2026,CCTV01,22:50:58,Chevrolet,Black,Car
+13-05-2026,CCTV10,22:53:07,Chevrolet,Black,Car
+14-05-2026,CCTV10,00:03:02,Isuzu,Gold,Truck
+14-05-2026,CCTV10,00:18:09,Suzuki,Yellow,Motorcycle
+14-05-2026,CCTV09,00:19:14,Suzuki,Yellow,Motorcycle
+14-05-2026,CCTV03,00:19:44,Suzuki,Yellow,Motorcycle
+14-05-2026,CCTV04,00:21:44,Suzuki,Yellow,Motorcycle
+14-05-2026,CCTV04,00:33:47,Subaru,Bronze Silver,Car
+14-05-2026,CCTV07,00:35:13,Subaru,Bronze Silver,Car
+14-05-2026,CCTV08,00:37:34,Subaru,Bronze Silver,Car
+14-05-2026,CCTV09,00:38:26,Subaru,Bronze Silver,Car
+14-05-2026,CCTV08,01:13:46,Isuzu,Olive Green,Truck
+14-05-2026,CCTV04,01:37:48,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV07,01:39:15,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV08,01:42:04,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV03,01:44:23,Chevrolet,Yellow-Green,Car
+14-05-2026,CCTV09,01:45:23,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV01,01:47:18,Chevrolet,Yellow-Green,Car
+14-05-2026,CCTV10,01:51:09,Chevrolet,Yellow-Green,Car
+14-05-2026,CCTV10,02:14:39,Kawasaki,Bronze,Motorcycle
+14-05-2026,CCTV09,02:17:13,Kawasaki,Bronze,Motorcycle
+14-05-2026,CCTV08,02:20:42,Kawasaki,Bronze,Motorcycle
+14-05-2026,CCTV03,02:20:45,GWM,Black,Car
+14-05-2026,CCTV07,02:24:51,Kawasaki,Bronze,Motorcycle
+14-05-2026,CCTV03,03:26:30,Hino,Blue,Bus
+14-05-2026,CCTV09,03:28:59,Suzuki,Orange,Motorcycle
+14-05-2026,CCTV10,03:56:06,Mercedes-Benz,Gray,Bus
+14-05-2026,CCTV09,03:57:19,Mercedes-Benz,Gray,Bus
+14-05-2026,CCTV03,04:00:26,Mercedes-Benz,Gray,Bus
+14-05-2026,CCTV04,04:03:59,Mercedes-Benz,Gray,Bus
+14-05-2026,CCTV04,04:20:54,Ford,Green,Car
+14-05-2026,CCTV03,04:22:29,Ford,Green,Car
+14-05-2026,CCTV03,04:25:08,Geely,Bronze Gold,Car
+14-05-2026,CCTV01,04:25:21,Ford,Green,Car
+14-05-2026,CCTV09,04:27:37,Geely,Bronze Gold,Car
+14-05-2026,CCTV08,04:29:16,Geely,Bronze Gold,Car
+14-05-2026,CCTV07,04:34:06,Geely,Bronze Gold,Car
+14-05-2026,CCTV04,04:52:43,Kawasaki,Navy Blue,Motorcycle
+14-05-2026,CCTV07,04:55:40,Kawasaki,Navy Blue,Motorcycle
+14-05-2026,CCTV08,04:58:27,Kawasaki,Navy Blue,Motorcycle
+14-05-2026,CCTV09,04:59:04,Kawasaki,Navy Blue,Motorcycle
+14-05-2026,CCTV03,05:12:01,Ford,Bronze Gray,Truck
+14-05-2026,CCTV04,05:16:32,Ford,Bronze Gray,Truck
+14-05-2026,CCTV07,05:28:53,Mercedes-Benz,Chartreuse,Bus
+14-05-2026,CCTV08,05:30:22,Mercedes-Benz,Chartreuse,Bus
+14-05-2026,CCTV09,05:30:53,Mercedes-Benz,Chartreuse,Bus
+14-05-2026,CCTV10,05:31:38,Mercedes-Benz,Chartreuse,Bus
+14-05-2026,CCTV03,05:54:30,Chevrolet,Pink,Car
+14-05-2026,CCTV09,05:55:03,Geely,White,Car
+14-05-2026,CCTV09,05:57:17,Chevrolet,Pink,Car
+14-05-2026,CCTV10,05:57:33,Isuzu,Metallic Green,Truck
+14-05-2026,CCTV08,05:58:37,Chevrolet,Pink,Car
+14-05-2026,CCTV07,06:01:21,Chevrolet,Pink,Car
+14-05-2026,CCTV01,06:13:25,Suzuki,Yellow-Green,Motorcycle
+14-05-2026,CCTV03,06:16:03,Suzuki,Yellow-Green,Motorcycle
+14-05-2026,CCTV04,06:17:17,Suzuki,Yellow-Green,Motorcycle
+14-05-2026,CCTV01,06:18:01,Aion,Yellow,Car
+14-05-2026,CCTV07,06:19:47,Neta,Yellow,Car
+14-05-2026,CCTV04,06:44:03,Hino,Green,Bus
+14-05-2026,CCTV07,07:03:55,Hino,Yellow-Green,Bus
+14-05-2026,CCTV04,07:05:29,Hino,Yellow-Green,Bus
+14-05-2026,CCTV03,07:11:14,Subaru,Light Green,Car
+14-05-2026,CCTV03,07:13:16,Wuling,Yellow-Green,Car
+14-05-2026,CCTV01,07:15:04,Subaru,Light Green,Car
+14-05-2026,CCTV10,07:19:44,Subaru,Light Green,Car
+14-05-2026,CCTV09,07:26:23,Honda,Light Green,Motorcycle
+14-05-2026,CCTV08,07:26:55,Honda,Light Green,Motorcycle
+14-05-2026,CCTV07,07:31:01,Honda,Light Green,Motorcycle
+14-05-2026,CCTV04,07:32:13,Honda,Light Green,Motorcycle
+14-05-2026,CCTV01,07:50:06,Hino,Silver,Truck
+14-05-2026,CCTV04,08:11:26,Hino,Olive Green,Bus
+14-05-2026,CCTV03,08:35:49,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV01,08:39:39,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV10,08:40:39,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV07,08:50:18,Hino,Blue,Bus
+14-05-2026,CCTV08,08:55:15,Yamaha,Olive Green,Motorcycle
+14-05-2026,CCTV07,08:56:44,Yamaha,Olive Green,Motorcycle
+14-05-2026,CCTV03,09:14:36,Suzuki,Green,Motorcycle
+14-05-2026,CCTV04,09:25:49,Proton,Yellow,Car
+14-05-2026,CCTV03,09:26:38,Proton,Yellow,Car
+14-05-2026,CCTV01,09:30:43,Proton,Yellow,Car
+14-05-2026,CCTV01,10:06:42,Isuzu,Dark Green,Bus
+14-05-2026,CCTV01,10:15:17,Ford,Maroon,Truck
+14-05-2026,CCTV09,10:15:53,Ford,Maroon,Truck
+14-05-2026,CCTV08,10:19:34,Ford,Maroon,Truck
+14-05-2026,CCTV07,10:20:28,Ford,Maroon,Truck
+14-05-2026,CCTV04,10:21:36,Ford,Maroon,Truck
+14-05-2026,CCTV01,10:23:43,Mercedes-Benz,Silver,Bus
+14-05-2026,CCTV07,10:32:18,Mercedes-Benz,Black,Car
+14-05-2026,CCTV10,10:38:37,Mazda,Red-White,Car
+14-05-2026,CCTV09,10:40:16,Mazda,Red-White,Car
+14-05-2026,CCTV08,10:41:03,Mazda,Red-White,Car
+14-05-2026,CCTV07,10:41:56,Mazda,Red-White,Car
+14-05-2026,CCTV01,10:42:17,Isuzu,Olive Green,Truck
+14-05-2026,CCTV10,11:11:33,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV09,11:13:04,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV08,11:17:23,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV07,11:18:08,Isuzu,Bronze Silver,Truck
+14-05-2026,CCTV04,11:18:37,Honda,Silver,Motorcycle
+14-05-2026,CCTV09,11:19:06,Isuzu,Red-White,Bus
+14-05-2026,CCTV03,11:33:53,Proton,Black,Car
+14-05-2026,CCTV09,11:35:27,Proton,Black,Car
+14-05-2026,CCTV08,11:40:17,Proton,Black,Car
+14-05-2026,CCTV07,11:41:30,Proton,Black,Car
+14-05-2026,CCTV04,12:22:01,Isuzu,Bronze Silver,Bus
+14-05-2026,CCTV08,13:37:23,Suzuki,Bronze Silver,Motorcycle
+14-05-2026,CCTV07,13:38:17,Suzuki,Bronze Silver,Motorcycle
+14-05-2026,CCTV04,13:45:01,Hino,Slate Blue,Bus
+14-05-2026,CCTV03,13:45:45,Hino,Slate Blue,Bus
+14-05-2026,CCTV01,13:49:12,Hino,Slate Blue,Bus
+14-05-2026,CCTV01,14:35:46,Ford,Gold,Truck
+14-05-2026,CCTV03,14:39:40,Ford,Gold,Truck
+14-05-2026,CCTV08,14:42:18,Mercedes-Benz,Yellow-Green,Bus
+14-05-2026,CCTV04,14:42:24,Ford,Gold,Truck
+14-05-2026,CCTV07,14:46:51,Mercedes-Benz,Yellow-Green,Bus
+14-05-2026,CCTV04,14:57:56,Hino,Red,Truck
+14-05-2026,CCTV07,15:02:28,Hino,Red,Truck
+14-05-2026,CCTV08,15:05:13,Hino,Red,Truck
+14-05-2026,CCTV09,15:05:50,Hino,Red,Truck
+14-05-2026,CCTV10,15:07:53,Hino,Red,Truck
+14-05-2026,CCTV07,15:08:00,Kawasaki,Chartreuse,Motorcycle
+14-05-2026,CCTV04,15:09:19,Kawasaki,Chartreuse,Motorcycle
+14-05-2026,CCTV07,15:15:08,Mitsubishi,Chartreuse,Truck
+14-05-2026,CCTV04,15:19:46,Mitsubishi,Chartreuse,Truck
+14-05-2026,CCTV03,15:37:36,Mercedes-Benz,Slate Blue,Bus
+14-05-2026,CCTV04,15:38:32,Mercedes-Benz,Slate Blue,Bus
+14-05-2026,CCTV04,16:50:22,Suzuki,Yellow,Car
+14-05-2026,CCTV04,17:08:37,Mercedes-Benz,Green,Bus
+14-05-2026,CCTV08,17:11:44,Mercedes-Benz,Orange,Bus
+14-05-2026,CCTV04,17:59:45,Suzuki,Bronze,Motorcycle
+14-05-2026,CCTV07,18:00:57,Suzuki,Bronze,Motorcycle
+14-05-2026,CCTV08,18:05:40,Suzuki,Bronze,Motorcycle
+14-05-2026,CCTV09,18:06:36,Suzuki,Bronze,Motorcycle
+14-05-2026,CCTV01,18:43:43,Honda,Gray,Motorcycle
+14-05-2026,CCTV03,18:45:19,Honda,Gray,Motorcycle
+14-05-2026,CCTV04,18:49:34,Honda,Gray,Motorcycle
+14-05-2026,CCTV03,19:02:52,Jaecoo,Yellow-Green,Car
+14-05-2026,CCTV04,19:03:34,Jaecoo,Yellow-Green,Car
+14-05-2026,CCTV03,19:07:43,Honda,Bronze Gray,Motorcycle
+14-05-2026,CCTV04,20:09:28,Mitsubishi,Bronze,Car
+14-05-2026,CCTV07,20:10:13,Mitsubishi,Bronze,Car
+14-05-2026,CCTV08,20:14:34,Mitsubishi,Bronze,Car
+14-05-2026,CCTV03,20:15:02,Suzuki,Metallic Green,Motorcycle
+14-05-2026,CCTV09,20:19:01,Mitsubishi,Bronze,Car
+14-05-2026,CCTV10,20:22:03,Mitsubishi,Bronze,Car
+14-05-2026,CCTV08,20:50:19,Mercedes-Benz,Red,Bus
+14-05-2026,CCTV07,20:52:33,Mercedes-Benz,Red,Bus
+14-05-2026,CCTV09,21:28:17,Volkswagen,Bronze Silver,Car
+14-05-2026,CCTV08,21:30:24,Volkswagen,Bronze Silver,Car
+14-05-2026,CCTV07,21:31:12,Volkswagen,Bronze Silver,Car
+14-05-2026,CCTV04,21:32:20,Volkswagen,Bronze Silver,Car
+14-05-2026,CCTV07,22:22:19,Wuling,Blue-White,Car
+14-05-2026,CCTV08,22:24:08,Wuling,Blue-White,Car
+14-05-2026,CCTV09,22:24:47,Wuling,Blue-White,Car
+14-05-2026,CCTV10,22:27:17,Wuling,Blue-White,Car
+14-05-2026,CCTV03,22:50:55,Kawasaki,Blue-White,Motorcycle
+14-05-2026,CCTV04,23:08:34,Yamaha,Bronze Gray,Motorcycle
+14-05-2026,CCTV03,23:10:31,Yamaha,Bronze Gray,Motorcycle
+14-05-2026,CCTV01,23:12:38,Yamaha,Bronze Gray,Motorcycle
+14-05-2026,CCTV03,23:26:18,Kawasaki,Metallic Green,Motorcycle
+14-05-2026,CCTV04,23:28:40,Honda,Gold,Motorcycle
+14-05-2026,CCTV09,23:29:33,Kawasaki,Metallic Green,Motorcycle
+14-05-2026,CCTV07,23:29:41,Honda,Gold,Motorcycle
+14-05-2026,CCTV08,23:32:07,Kawasaki,Metallic Green,Motorcycle
+14-05-2026,CCTV07,23:33:32,Kawasaki,Metallic Green,Motorcycle
+14-05-2026,CCTV09,23:33:39,Haval,Bronze,Car
+14-05-2026,CCTV08,23:34:25,Honda,Gold,Motorcycle
+14-05-2026,CCTV04,23:35:01,Honda,Metallic Green,Motorcycle
+14-05-2026,CCTV09,23:36:03,Honda,Gold,Motorcycle
+14-05-2026,CCTV04,23:38:07,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV07,23:39:02,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV08,23:40:11,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV09,23:41:23,Mercedes-Benz,Dark Green,Bus
+14-05-2026,CCTV04,23:50:18,Isuzu,Gold,Truck
+14-05-2026,CCTV07,23:54:34,Isuzu,Gold,Truck
+14-05-2026,CCTV08,23:56:54,Isuzu,Gold,Truck
+14-05-2026,CCTV09,23:58:47,Isuzu,Gold,Truck

@@ -1,0 +1,12 @@
+[project]
+name = "query-mock"
+version = "0.1.0"
+description = "Thai/English CCTV CSV log query parser and CLI"
+requires-python = ">=3.10"
+
+[tool.coverage.run]
+source = ["cctv_query"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
