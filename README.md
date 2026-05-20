@@ -1,7 +1,5 @@
 # CCTV Log Query Mock
 
-ระบบ query ข้อมูล CCTV log จาก CSV ด้วยคำถามภาษาไทยหรืออังกฤษ โดยใช้ไฟล์ข้อมูลหลัก:
-
 ```text
 D:\sup_ai\query_mock\cctv_vehicle_log_routed.csv
 ```
