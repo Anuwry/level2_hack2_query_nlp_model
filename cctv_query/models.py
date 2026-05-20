@@ -66,6 +66,7 @@ class QuerySpec:
     wants_vehicle_list: bool = False
     wants_distinct_vehicle_count: bool = False
     out_of_range_fields: tuple[str, ...] = ()
+    ambiguous_date_options: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -103,6 +104,8 @@ class QueryResult:
     answer: str
     out_of_range: bool = False
     out_of_range_reasons: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+    clarifications: tuple[dict[str, Any], ...] = ()
 
     @property
     def count(self) -> int:
@@ -112,6 +115,10 @@ class QueryResult:
     def event_count(self) -> int:
         return self.summary.event_count
 
+    @property
+    def needs_clarification(self) -> bool:
+        return any(bool(item.get("required")) for item in self.clarifications)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "answer": self.answer,
@@ -119,6 +126,9 @@ class QueryResult:
             "event_count": self.event_count,
             "out_of_range": self.out_of_range,
             "out_of_range_reasons": list(self.out_of_range_reasons),
+            "warnings": list(self.warnings),
+            "clarifications": list(self.clarifications),
+            "needs_clarification": self.needs_clarification,
             "query": self.spec.to_dict(),
             "summary": self.summary.to_dict(),
             "routes": [route.to_dict() for route in self.routes],

@@ -79,6 +79,54 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(result.spec.date, "12-05-2026")
         self.assertEqual(result.summary.brand_color_counts[("Toyota", "Red")], 2)
 
+    def test_broad_query_returns_user_warnings(self):
+        result = self.engine.ask("red vehicles")
+
+        self.assertIn("No date specified; searching all dates.", result.warnings)
+        self.assertIn("No CCTV camera specified; searching all cameras.", result.warnings)
+        self.assertIn("No time range specified; searching the full day.", result.warnings)
+
+    def test_ambiguous_day_only_date_needs_clarification(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-06-2026", "CCTV01", "08:00:00", "Honda", "Red", "Car"),
+            ]
+        )
+
+        result = engine.ask("day 12 red cars")
+
+        self.assertTrue(result.needs_clarification)
+        self.assertEqual(result.count, 0)
+        self.assertEqual(result.clarifications[0]["field"], "date")
+        self.assertTrue(result.clarifications[0]["required"])
+        self.assertEqual(
+            [option["value"] for option in result.clarifications[0]["options"]],
+            ["12-05-2026", "12-06-2026"],
+        )
+
+    def test_color_query_offers_related_exact_color_options(self):
+        result = self.engine.ask("วันที่ 12 มีรถสีแดงกี่คัน")
+
+        self.assertFalse(result.needs_clarification)
+        self.assertEqual(result.spec.colors, ("Red",))
+        color_clarification = next(item for item in result.clarifications if item["field"] == "color")
+        options = {option["value"]: option for option in color_clarification["options"]}
+        self.assertEqual(options["Red"]["count"], 5)
+        self.assertEqual(options["Red-White"]["count"], 2)
+        self.assertIn("Red, Red-White", options)
+        self.assertTrue(options["Red"]["selected"])
+
+    def test_missing_exact_base_color_can_offer_related_colors_without_out_of_range(self):
+        result = self.engine.ask("วันที่ 12 มีรถสีเขียวกี่คัน")
+
+        self.assertFalse(result.out_of_range)
+        self.assertEqual(result.count, 0)
+        color_clarification = next(item for item in result.clarifications if item["field"] == "color")
+        options = {option["value"]: option for option in color_clarification["options"]}
+        self.assertEqual(options["Dark Green"]["count"], 1)
+        self.assertEqual(options["Metallic Green"]["count"], 1)
+
     def test_route_answer_lists_camera_sequence_for_selected_vehicle(self):
         result = self.engine.ask("วันที่ 12 รถ Toyota ช่วง 22:00-23:00 เดินทางไปทางไหนบ้าง")
 

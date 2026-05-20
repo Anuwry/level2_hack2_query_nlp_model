@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import re
 from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
 from cctv_query.csv_store import load_records
@@ -44,22 +46,52 @@ class CCTVQueryEngine:
             spec = QuerySpec(raw_question=question, language=_detect_language(question))
             return out_of_range_result(spec, ("invalid_value",))
 
+        required_clarifications = self.required_clarifications(spec)
+        if required_clarifications:
+            return QueryResult(
+                spec=spec,
+                matches=[],
+                routes=[],
+                summary=summarize([]),
+                answer=format_clarification_answer(spec, required_clarifications),
+                clarifications=tuple(required_clarifications),
+            )
+
         out_of_range_reasons = self.out_of_range_reasons(spec)
         if out_of_range_reasons:
             return out_of_range_result(spec, tuple(out_of_range_reasons))
 
+        warnings = tuple(self.query_warnings(spec))
         matches = self.filter_records(spec)
         if spec.wants_route:
             routes = self.find_routes(spec)
             route_matches = [record for route in routes for record in route.detections]
             summary = summarize_routes(routes)
             answer = format_answer(spec, summary, routes=routes)
-            return QueryResult(spec=spec, matches=route_matches, routes=routes, summary=summary, answer=answer)
+            clarifications = tuple(self.optional_clarifications(spec))
+            return QueryResult(
+                spec=spec,
+                matches=route_matches,
+                routes=routes,
+                summary=summary,
+                answer=answer,
+                warnings=warnings,
+                clarifications=clarifications,
+            )
 
         routes = build_vehicle_routes(matches)
         summary = summarize_distinct_vehicle_identities(routes) if spec.wants_distinct_vehicle_count else summarize_routes(routes)
         answer = format_answer(spec, summary, routes=routes)
-        return QueryResult(spec=spec, matches=matches, routes=routes, summary=summary, answer=answer)
+        clarifications = tuple(self.optional_clarifications(spec))
+        return QueryResult(
+            spec=spec,
+            matches=matches,
+            routes=routes,
+            summary=summary,
+            answer=answer,
+            warnings=warnings,
+            clarifications=clarifications,
+        )
 
     def filter_records(self, spec: QuerySpec) -> list[CCTVRecord]:
         return [record for record in self.records if _matches(record, spec)]
@@ -73,12 +105,90 @@ class CCTVQueryEngine:
         if spec.brand and not _casefold_contains(self.known_brands, spec.brand):
             _append_unique(reasons, "brand")
         for color in spec.colors or ((spec.color,) if spec.color else ()):
-            if not _casefold_contains(self.known_colors, color):
+            if not _casefold_contains(self.known_colors, color) and not _related_color_values(color, self.known_colors):
                 _append_unique(reasons, "color")
                 break
         if spec.vehicle_type and not _casefold_contains(self.known_vehicle_types, spec.vehicle_type):
             _append_unique(reasons, "vehicle_type")
         return reasons
+
+    def required_clarifications(self, spec: QuerySpec) -> list[dict]:
+        if spec.ambiguous_date_options:
+            return [_date_clarification(spec)]
+        return []
+
+    def optional_clarifications(self, spec: QuerySpec) -> list[dict]:
+        clarifications: list[dict] = []
+        color_clarification = self.color_clarification(spec)
+        if color_clarification:
+            clarifications.append(color_clarification)
+        return clarifications
+
+    def query_warnings(self, spec: QuerySpec) -> list[str]:
+        if spec.ambiguous_date_options:
+            return []
+
+        warnings: list[str] = []
+        if not spec.date:
+            warnings.append(_localized_warning(spec.language, "date"))
+        if not spec.cctv_id:
+            warnings.append(_localized_warning(spec.language, "cctv"))
+        if not spec.start_time or not spec.end_time:
+            warnings.append(_localized_warning(spec.language, "time"))
+        return warnings
+
+    def color_clarification(self, spec: QuerySpec) -> dict | None:
+        selected_colors = spec.colors or ((spec.color,) if spec.color else ())
+        if len(selected_colors) != 1:
+            return None
+
+        selected_color = selected_colors[0]
+        if not _is_base_color(selected_color):
+            return None
+
+        related_colors = _related_color_values(selected_color, self.known_colors)
+        option_colors = [selected_color]
+        for color in related_colors:
+            if not _casefold_contains(option_colors, color):
+                option_colors.append(color)
+        if len(option_colors) <= 1:
+            return None
+
+        options = [self._color_option(spec, color, selected=(color.casefold() == selected_color.casefold())) for color in option_colors]
+        all_count = self._count_for_colors(spec, tuple(option_colors))
+        all_label = "ทุกสีที่เกี่ยวข้อง: " if spec.language == "th" else "All related colors: "
+        options.append(
+            {
+                "value": ", ".join(option_colors),
+                "label": all_label + ", ".join(option_colors),
+                "colors": option_colors,
+                "count": all_count,
+                "selected": False,
+            }
+        )
+        return {
+            "field": "color",
+            "required": False,
+            "message": _localized_color_message(spec.language, selected_color),
+            "options": options,
+        }
+
+    def _color_option(self, spec: QuerySpec, color: str, selected: bool = False) -> dict:
+        return {
+            "value": color,
+            "label": color,
+            "colors": [color],
+            "count": self._count_for_colors(spec, (color,)),
+            "selected": selected,
+        }
+
+    def _count_for_colors(self, spec: QuerySpec, colors: tuple[str, ...]) -> int:
+        option_spec = replace(spec, color=colors[0] if colors else None, colors=colors)
+        matches = self.filter_records(option_spec)
+        routes = build_vehicle_routes(matches)
+        if spec.wants_distinct_vehicle_count:
+            return summarize_distinct_vehicle_identities(routes).unique_vehicle_count
+        return summarize_routes(routes).unique_vehicle_count
 
     def find_routes(self, spec: QuerySpec) -> list[VehicleRoute]:
         return [
@@ -98,6 +208,12 @@ def out_of_range_result(spec: QuerySpec, reasons: tuple[str, ...]) -> QueryResul
         out_of_range=True,
         out_of_range_reasons=reasons,
     )
+
+
+def format_clarification_answer(spec: QuerySpec, clarifications: list[dict]) -> str:
+    if spec.language == "th":
+        return "ต้องระบุข้อมูลเพิ่มก่อนตอบคำถาม"
+    return "More information is needed before answering this question."
 
 
 def summarize(records: list[CCTVRecord], event_count: int | None = None) -> QuerySummary:
@@ -222,6 +338,73 @@ def _append_unique(values: list[str], value: str) -> None:
 def _casefold_contains(values: list[str], value: str) -> bool:
     normalized = value.casefold()
     return any(item.casefold() == normalized for item in values)
+
+
+def _date_clarification(spec: QuerySpec) -> dict:
+    options = [
+        {
+            "value": date,
+            "label": _date_option_label(date),
+            "date": date,
+        }
+        for date in spec.ambiguous_date_options
+    ]
+    day = spec.ambiguous_date_options[0].split("-", maxsplit=1)[0] if spec.ambiguous_date_options else ""
+    if spec.language == "th":
+        message = f"วันที่ {day} มีหลายเดือนในข้อมูล กรุณาเลือกเดือน/วันที่ที่ต้องการ"
+    else:
+        message = f"Day {day} appears in multiple months. Select the date/month to use."
+    return {
+        "field": "date",
+        "required": True,
+        "message": message,
+        "options": options,
+    }
+
+
+def _date_option_label(date: str) -> str:
+    day, month, year = date.split("-")
+    return f"{month}-{year} ({date})"
+
+
+def _localized_warning(language: str, field: str) -> str:
+    if language == "th":
+        return {
+            "date": "ไม่ได้ระบุวันที่ จึงค้นหาทุกวันที่ในข้อมูล",
+            "cctv": "ไม่ได้ระบุกล้อง จึงค้นหาทุกกล้อง",
+            "time": "ไม่ได้ระบุช่วงเวลา จึงค้นหาทั้งวัน",
+        }[field]
+    return {
+        "date": "No date specified; searching all dates.",
+        "cctv": "No CCTV camera specified; searching all cameras.",
+        "time": "No time range specified; searching the full day.",
+    }[field]
+
+
+def _localized_color_message(language: str, selected_color: str) -> str:
+    if language == "th":
+        return f"ระบบตอบตามสี {selected_color} แบบ exact match หากหมายถึงสีอื่นให้เลือกจากรายการ"
+    return f"The answer uses exact color {selected_color}. Select another related color if needed."
+
+
+def _is_base_color(color: str) -> bool:
+    return len(_color_tokens(color)) == 1
+
+
+def _related_color_values(query_color: str, known_colors: list[str]) -> list[str]:
+    query = query_color.casefold()
+    related: list[str] = []
+    for color in sorted(known_colors, key=lambda value: (value.casefold() != query, value.casefold())):
+        if color.casefold() == query:
+            continue
+        tokens = _color_tokens(color)
+        if query in tokens:
+            related.append(color)
+    return related
+
+
+def _color_tokens(color: str) -> set[str]:
+    return {token for token in re.split(r"[\s\-]+", color.casefold()) if token}
 
 
 def _detect_language(text: str) -> str:

@@ -134,6 +134,23 @@
       </section>
     </main>
 
+    <div class="modal-backdrop" id="clarificationModal" hidden>
+      <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="clarificationTitle">
+        <div class="modal-header">
+          <h2 id="clarificationTitle">ตรวจสอบเงื่อนไข</h2>
+          <button type="button" id="dismissClarificationButton" class="icon-button" aria-label="Close">×</button>
+        </div>
+        <p id="clarificationMessage" class="modal-message"></p>
+        <ul id="warningList" class="warning-list"></ul>
+        <label id="clarificationSelectLabel" for="clarificationSelect">ตัวเลือก</label>
+        <select id="clarificationSelect"></select>
+        <div class="modal-actions">
+          <button type="button" id="applyClarificationButton">ใช้ตัวเลือกนี้</button>
+          <button type="button" id="keepCurrentAnswerButton" class="secondary">ใช้คำตอบปัจจุบัน</button>
+        </div>
+      </section>
+    </div>
+
     <script src="/static/app.js"></script>
   </body>
 </html>

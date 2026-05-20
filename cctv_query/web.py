@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
 
-from cctv_query.batch import answer_batch_questions, format_csv_style_answer, render_answers_csv
+from cctv_query.batch import answer_batch_questions, format_csv_style_answer, parse_batch_question_csv, render_answers_csv
 from cctv_query.engine import CCTVQueryEngine
 from cctv_query.llm_normalizer import (
     DEFAULT_LLM_BASE_URL,
@@ -33,6 +33,9 @@ def handle_query_payload(
     question = str(payload.get("question", "")).strip()
     if not question:
         raise ValueError("Question is required.")
+
+    if _looks_like_multi_question_csv(question):
+        return answer_batch_questions(engine, question)
 
     use_llm = payload.get("use_llm")
     llm_enabled = use_llm if isinstance(use_llm, bool) else None
@@ -65,6 +68,13 @@ def handle_batch_query_payload(engine: CCTVQueryEngine, payload: dict) -> dict:
     if not csv_text:
         raise ValueError("CSV text is required.")
     return answer_batch_questions(engine, csv_text)
+
+
+def _looks_like_multi_question_csv(text: str) -> bool:
+    try:
+        return len(parse_batch_question_csv(text)) > 1
+    except ValueError:
+        return False
 
 
 class CCTVWebServer(ThreadingHTTPServer):

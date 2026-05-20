@@ -43,6 +43,39 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(response["answer"], "Question Out Of Range")
         self.assertEqual(response["csv_answer"], "Question Out Of Range")
 
+    def test_handle_query_payload_returns_warnings_and_color_options(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "09:00:00", "Honda", "Red-White", "Car"),
+            ]
+        )
+
+        response = handle_query_payload(engine, {"question": "red vehicles"})
+
+        self.assertIn("warnings", response)
+        self.assertIn("No date specified; searching all dates.", response["warnings"])
+        color_clarification = next(item for item in response["clarifications"] if item["field"] == "color")
+        self.assertFalse(color_clarification["required"])
+        self.assertEqual(color_clarification["options"][0]["value"], "Red")
+
+    def test_handle_query_payload_returns_required_date_clarification(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-06-2026", "CCTV01", "08:00:00", "Honda", "Red", "Car"),
+            ]
+        )
+
+        response = handle_query_payload(engine, {"question": "day 12 red cars"})
+
+        self.assertTrue(response["needs_clarification"])
+        self.assertEqual(response["clarifications"][0]["field"], "date")
+        self.assertEqual(
+            [option["value"] for option in response["clarifications"][0]["options"]],
+            ["12-05-2026", "12-06-2026"],
+        )
+
     def test_handle_query_payload_returns_csv_style_answer_for_normal_question(self):
         response = handle_query_payload(
             self.engine,
@@ -54,6 +87,17 @@ class WebApiTests(unittest.TestCase):
         self.assertIn("Q_SINGLE", response["answers_csv"])
         self.assertIn('"[(Toyota, Red):1]"', response["answers_csv"])
 
+    def test_handle_query_payload_uses_dot_time_range_for_single_question_csv_text(self):
+        response = handle_query_payload(
+            self.engine,
+            {"question": "Q3, CCTVO1, 8.00.00 - 8.10.00.\nจำนวนรถยนต์แยกตามสี", "question_id": "Q3"},
+        )
+
+        self.assertEqual(response["query"]["cctv_id"], "CCTV01")
+        self.assertEqual(response["query"]["start_time"], "08:00:00")
+        self.assertEqual(response["query"]["end_time"], "08:10:00")
+        self.assertEqual(response["csv_answer"], "[Red:1]")
+
     def test_handle_batch_query_payload_returns_answers_csv(self):
         csv_text = "Question ID,CCTV ID,Time Range,Query\nQ1,CCTVO1,8.00.00 - 8.10.00,จำนวนรถยนต์แยกตามยี่ห้อและสี\n"
 
@@ -63,6 +107,25 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(response["answers"][0]["csv_answer"], "[(Toyota, Red):1]")
         self.assertIn("Question ID,Answer", response["answers_csv"])
         self.assertIn('"[(Toyota, Red):1]"', response["answers_csv"])
+
+    def test_handle_query_payload_auto_detects_multi_question_csv_text(self):
+        response = handle_query_payload(
+            self.engine,
+            {
+                "question": (
+                    "Q1, CCTVO1, 8.00.00 - 8.10.00,\n"
+                    "cars by brand and color\n"
+                    "Q2, CCTVO1, 8.00.00 - 8.10.00,\n"
+                    "cars by brand\n"
+                    "Q3, CCTVO1, 8.00.00 - 8.10.00,\n"
+                    "cars by color\n"
+                )
+            },
+        )
+
+        self.assertEqual([row["question_id"] for row in response["answers"]], ["Q1", "Q2", "Q3"])
+        self.assertEqual(response["answers"][0]["csv_answer"], "[(Toyota, Red):1]")
+        self.assertIn("Q3", response["answers_csv"])
 
     def test_handle_query_payload_can_use_llm_normalizer(self):
         def fake_normalizer(question, engine):

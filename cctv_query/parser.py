@@ -7,7 +7,7 @@ from cctv_query.models import QuerySpec
 from cctv_query.normalization import normalize_cctv_id, normalize_date, normalize_time, time_to_seconds
 
 
-TIME_TOKEN = r"\d{1,2}:\d{1,2}(?::\d{1,2})?"
+TIME_TOKEN = r"\d{1,2}[:.]\d{1,2}(?:[:.]\d{1,2})?"
 DATE_TOKEN = (
     r"\b(?:"
     r"\d{1,2}\s*[-/]\s*\d{1,2}\s*[-/]\s*\d{4}"
@@ -112,7 +112,7 @@ def parse_question(
 ) -> QuerySpec:
     text = question.strip()
     language = "th" if re.search(r"[\u0E00-\u0E7F]", text) else "en"
-    date, date_out_of_range = _extract_date(text, known_dates)
+    date, date_out_of_range, ambiguous_date_options = _extract_date(text, known_dates)
     cctv_id = _extract_cctv_id(text)
     start_time, end_time = _extract_time_range(text)
     start_seconds = time_to_seconds(start_time) if start_time else None
@@ -145,21 +145,25 @@ def parse_question(
         wants_vehicle_list=wants_vehicle_list,
         wants_distinct_vehicle_count=wants_distinct_vehicle_count,
         out_of_range_fields=out_of_range_fields,
+        ambiguous_date_options=ambiguous_date_options,
     )
 
 
-def _extract_date(text: str, known_dates: Iterable[str] | None = None) -> tuple[str | None, bool]:
+def _extract_date(text: str, known_dates: Iterable[str] | None = None) -> tuple[str | None, bool, tuple[str, ...]]:
     match = re.search(DATE_TOKEN, text)
     if match:
-        return normalize_date(_clean_date_text(match.group(0))), False
+        return normalize_date(_clean_date_text(match.group(0))), False, ()
 
     day = _extract_day_only_date(text)
     if day is None:
-        return None, False
+        return None, False, ()
     resolved_date = _resolve_day_from_known_dates(day, known_dates)
     if resolved_date:
-        return resolved_date, False
-    return None, _day_is_out_of_known_dates(day, known_dates)
+        return resolved_date, False, ()
+    matching_dates = _dates_matching_day(day, known_dates)
+    if len(matching_dates) > 1:
+        return None, False, tuple(matching_dates)
+    return None, _day_is_out_of_known_dates(day, known_dates), ()
 
 
 def _extract_day_only_date(text: str) -> int | None:
@@ -182,14 +186,18 @@ def _clean_date_text(text: str) -> str:
 
 
 def _resolve_day_from_known_dates(day: int, known_dates: Iterable[str] | None) -> str | None:
-    if not known_dates:
-        return None
-
-    normalized_dates = sorted({normalize_date(date) for date in known_dates})
-    matches = [date for date in normalized_dates if int(date.split("-", maxsplit=1)[0]) == day]
+    matches = _dates_matching_day(day, known_dates)
     if len(matches) == 1:
         return matches[0]
     return None
+
+
+def _dates_matching_day(day: int, known_dates: Iterable[str] | None) -> list[str]:
+    if not known_dates:
+        return []
+
+    normalized_dates = sorted({normalize_date(date) for date in known_dates})
+    return [date for date in normalized_dates if int(date.split("-", maxsplit=1)[0]) == day]
 
 
 def _day_is_out_of_known_dates(day: int, known_dates: Iterable[str] | None) -> bool:
@@ -218,7 +226,11 @@ def _extract_time_range(text: str) -> tuple[str | None, str | None]:
     matches = re.findall(TIME_TOKEN, text)
     if len(matches) < 2:
         return None, None
-    return normalize_time(matches[0]), normalize_time(matches[1])
+    return _normalize_loose_time(matches[0]), _normalize_loose_time(matches[1])
+
+
+def _normalize_loose_time(value: str) -> str:
+    return normalize_time(value.strip().strip(".").replace(".", ":"))
 
 
 def _extract_alias(text: str, aliases: Iterable[tuple[str, str]]) -> str | None:

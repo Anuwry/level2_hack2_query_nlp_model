@@ -72,6 +72,16 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertIsNone(spec.date)
         self.assertEqual(spec.out_of_range_fields, ("date",))
 
+    def test_day_only_date_with_multiple_months_is_ambiguous(self):
+        spec = parse_question(
+            "วันที่ 12 มีรถผ่านกี่คัน",
+            known_dates=["12-05-2026", "12-06-2026", "13-06-2026"],
+        )
+
+        self.assertIsNone(spec.date)
+        self.assertEqual(spec.ambiguous_date_options, ("12-05-2026", "12-06-2026"))
+        self.assertEqual(spec.out_of_range_fields, ())
+
     def test_parse_route_request(self):
         spec = parse_question(
             "วันที่ 12 รถ Toyota เดินทางไปทางไหนบ้าง",
@@ -108,6 +118,14 @@ class ParseQuestionTests(unittest.TestCase):
         spec = parse_question("CCTVO1 from 00:01:00 to 00:10:00 cars")
 
         self.assertEqual(spec.cctv_id, "CCTV01")
+
+    def test_parse_dot_time_range_from_project_question_format(self):
+        spec = parse_question("Q3, CCTVO1, 0.01.00 - 0.10.00.\nจำนวนรถยนต์แยกตามสี")
+
+        self.assertEqual(spec.cctv_id, "CCTV01")
+        self.assertEqual(spec.start_time, "00:01:00")
+        self.assertEqual(spec.end_time, "00:10:00")
+        self.assertEqual(spec.vehicle_type, "Car")
 
     def test_parse_unique_vehicle_list_request(self):
         spec = parse_question(

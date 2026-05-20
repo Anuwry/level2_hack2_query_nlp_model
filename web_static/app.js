@@ -20,9 +20,19 @@ const routeMetric = document.querySelector("#routeMetric");
 const summaryRows = document.querySelector("#summaryRows");
 const routeList = document.querySelector("#routeList");
 const batchRows = document.querySelector("#batchRows");
+const clarificationModal = document.querySelector("#clarificationModal");
+const clarificationTitle = document.querySelector("#clarificationTitle");
+const clarificationMessage = document.querySelector("#clarificationMessage");
+const warningList = document.querySelector("#warningList");
+const clarificationSelectLabel = document.querySelector("#clarificationSelectLabel");
+const clarificationSelect = document.querySelector("#clarificationSelect");
+const applyClarificationButton = document.querySelector("#applyClarificationButton");
+const dismissClarificationButton = document.querySelector("#dismissClarificationButton");
+const keepCurrentAnswerButton = document.querySelector("#keepCurrentAnswerButton");
 
 let latestResult = null;
 let latestBatch = null;
+let pendingClarification = null;
 const csvSample = `Question ID,CCTV ID,Time Range,Query
 Q1,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อและสี
 Q2,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อ
@@ -49,8 +59,16 @@ form.addEventListener("submit", async (event) => {
       throw new Error(payload.error || "Query failed");
     }
     latestResult = payload;
-    latestBatch = payload.answers_csv ? { answers_csv: payload.answers_csv } : null;
-    renderResult(payload);
+    if (Array.isArray(payload.answers)) {
+      latestBatch = payload;
+      renderBatchResult(payload);
+      setTab("csv");
+      showFollowUpDialog(payload);
+    } else {
+      latestBatch = payload.answers_csv ? { answers_csv: payload.answers_csv } : null;
+      renderResult(payload);
+      showFollowUpDialog(payload);
+    }
     statusPill.textContent = "Ready";
   } catch (error) {
     renderError(error.message);
@@ -89,6 +107,7 @@ csvForm.addEventListener("submit", async (event) => {
     latestResult = payload;
     renderBatchResult(payload);
     setTab("csv");
+    showFollowUpDialog(payload);
     statusPill.textContent = "Ready";
   } catch (error) {
     renderError(error.message);
@@ -125,6 +144,37 @@ exportCsvButton.addEventListener("click", () => {
     return;
   }
   downloadTextFile("cctv_answers.csv", latestBatch.answers_csv, "text/csv;charset=utf-8");
+});
+
+applyClarificationButton.addEventListener("click", () => {
+  if (!pendingClarification) {
+    closeClarificationModal();
+    return;
+  }
+  const option = pendingClarification.options[Number(clarificationSelect.value)];
+  const nextQuestion = buildClarifiedQuestion(
+    pendingClarification.result,
+    pendingClarification.clarification,
+    option
+  );
+  closeClarificationModal();
+  questionInput.value = nextQuestion;
+  form.requestSubmit();
+});
+
+dismissClarificationButton.addEventListener("click", closeClarificationModal);
+keepCurrentAnswerButton.addEventListener("click", closeClarificationModal);
+
+clarificationModal.addEventListener("click", (event) => {
+  if (event.target === clarificationModal) {
+    closeClarificationModal();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !clarificationModal.hidden) {
+    closeClarificationModal();
+  }
 });
 
 document.querySelectorAll("[data-question]").forEach((button) => {
@@ -199,6 +249,166 @@ function answerText(result) {
   }
   lines.push(result.answer || "");
   return lines.join("\n");
+}
+
+function showFollowUpDialog(payload) {
+  if (Array.isArray(payload.answers)) {
+    showBatchFollowUpDialog(payload.answers);
+    return;
+  }
+
+  const clarifications = payload.clarifications || [];
+  const warnings = payload.warnings || [];
+  const requiredClarification = clarifications.find((item) => item.required);
+  if (requiredClarification) {
+    openClarificationDialog("เลือกข้อมูลเพิ่มเติม", requiredClarification, warnings, payload);
+    return;
+  }
+
+  const colorClarification = clarifications.find((item) => item.field === "color");
+  if (colorClarification) {
+    openClarificationDialog("เลือกสีที่ต้องการ", colorClarification, warnings, payload);
+    return;
+  }
+
+  if (warnings.length) {
+    openWarningDialog("คำถามค้นหากว้าง", warnings);
+  }
+}
+
+function showBatchFollowUpDialog(rows) {
+  const requiredRows = rows.filter((row) => row.needs_clarification);
+  if (requiredRows.length) {
+    openWarningDialog(
+      "ต้องระบุข้อมูลเพิ่ม",
+      requiredRows.map((row) => `${row.question_id}: ${firstClarificationMessage(row)}`)
+    );
+    return;
+  }
+
+  const warnings = [];
+  rows.forEach((row) => {
+    (row.warnings || []).forEach((warning) => warnings.push(`${row.question_id}: ${warning}`));
+  });
+  if (warnings.length) {
+    openWarningDialog("คำถามค้นหากว้าง", warnings);
+  }
+}
+
+function firstClarificationMessage(row) {
+  const [clarification] = row.clarifications || [];
+  return clarification?.message || "Please clarify this row.";
+}
+
+function openClarificationDialog(title, clarification, warnings, result) {
+  pendingClarification = {
+    result,
+    clarification,
+    options: clarification.options || [],
+  };
+  clarificationTitle.textContent = title;
+  clarificationMessage.textContent = clarification.message || "";
+  renderWarningList(warnings);
+  clarificationSelectLabel.hidden = false;
+  clarificationSelect.hidden = false;
+  applyClarificationButton.hidden = false;
+  keepCurrentAnswerButton.hidden = false;
+  keepCurrentAnswerButton.textContent = clarification.required ? "ยกเลิก" : "ใช้คำตอบปัจจุบัน";
+  renderClarificationOptions(pendingClarification.options);
+  clarificationModal.hidden = false;
+  clarificationSelect.focus();
+}
+
+function openWarningDialog(title, warnings) {
+  pendingClarification = null;
+  clarificationTitle.textContent = title;
+  clarificationMessage.textContent = "";
+  renderWarningList(warnings);
+  clarificationSelectLabel.hidden = true;
+  clarificationSelect.hidden = true;
+  applyClarificationButton.hidden = true;
+  keepCurrentAnswerButton.hidden = false;
+  keepCurrentAnswerButton.textContent = "รับทราบ";
+  clarificationModal.hidden = false;
+  keepCurrentAnswerButton.focus();
+}
+
+function closeClarificationModal() {
+  pendingClarification = null;
+  clarificationModal.hidden = true;
+}
+
+function renderWarningList(warnings) {
+  warningList.innerHTML = "";
+  (warnings || []).forEach((warning) => {
+    const item = document.createElement("li");
+    item.textContent = warning;
+    warningList.appendChild(item);
+  });
+  warningList.hidden = !warnings?.length;
+}
+
+function renderClarificationOptions(options) {
+  clarificationSelect.innerHTML = "";
+  options.forEach((option, index) => {
+    const item = document.createElement("option");
+    item.value = String(index);
+    item.textContent = optionLabel(option);
+    clarificationSelect.appendChild(item);
+  });
+}
+
+function optionLabel(option) {
+  const label = option.label || option.value || "";
+  return typeof option.count === "number" ? `${label} (${option.count})` : label;
+}
+
+function buildClarifiedQuestion(result, clarification, option) {
+  const override = {};
+  if (clarification.field === "date") {
+    override.date = option.date || option.value;
+  }
+  if (clarification.field === "color") {
+    override.colors = option.colors || [option.value];
+  }
+  return buildStructuredQuestion(result.query || {}, override);
+}
+
+function buildStructuredQuestion(query, override = {}) {
+  const parts = [];
+  const date = override.date || query.date;
+  if (date) {
+    parts.push(`date ${date}`);
+  }
+  if (query.cctv_id) {
+    parts.push(query.cctv_id);
+  }
+  if (query.start_time && query.end_time) {
+    parts.push(`from ${query.start_time} to ${query.end_time}`);
+  }
+  if (query.brand) {
+    parts.push(`brand ${query.brand}`);
+  }
+  const colors = override.colors || query.colors || (query.color ? [query.color] : []);
+  if (colors.length) {
+    parts.push(`color ${colors.join(" and ")}`);
+  }
+  if (query.vehicle_type) {
+    parts.push(`type ${query.vehicle_type}`);
+  }
+  if (query.wants_distinct_vehicle_count) {
+    parts.push("distinct vehicles");
+  }
+  if (query.wants_vehicle_list) {
+    parts.push("list vehicles");
+  }
+  if (query.wants_route) {
+    parts.push("route");
+  }
+  if (query.wants_brand_color_breakdown) {
+    parts.push("by brand and color");
+  }
+  return parts.join(" ") || query.raw_question || questionInput.value.trim();
 }
 
 function renderSummary(rows) {

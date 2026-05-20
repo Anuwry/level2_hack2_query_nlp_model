@@ -10,6 +10,9 @@ from cctv_query.models import QueryResult
 from cctv_query.normalization import normalize_cctv_id, normalize_time
 
 
+DEFAULT_QUESTION_HEADER = "Question ID,CCTV ID,Time Range,Query"
+
+
 @dataclass(frozen=True)
 class BatchQuestionRow:
     question_id: str
@@ -27,6 +30,11 @@ def parse_batch_question_csv(csv_text: str) -> list[BatchQuestionRow]:
     rows: list[BatchQuestionRow] = []
     for raw_row in reader:
         normalized_row = {_normalize_header(key): (value or "").strip() for key, value in raw_row.items() if key}
+        extra_values = raw_row.get(None) or []
+        if extra_values:
+            query_key = "query" if "query" in normalized_row else "question" if "question" in normalized_row else "query"
+            current_query = normalized_row.get(query_key, "")
+            normalized_row[query_key] = (current_query + "," + ",".join(value or "" for value in extra_values)).strip()
         if not any(normalized_row.values()):
             continue
         question_id = normalized_row.get("question_id") or normalized_row.get("id") or ""
@@ -80,6 +88,9 @@ def answer_batch_questions(engine: CCTVQueryEngine, csv_text: str) -> dict:
                 "event_count": result.event_count,
                 "out_of_range": result.out_of_range,
                 "out_of_range_reasons": list(result.out_of_range_reasons),
+                "warnings": list(result.warnings),
+                "clarifications": list(result.clarifications),
+                "needs_clarification": result.needs_clarification,
             }
         )
 
@@ -153,7 +164,7 @@ def _normalize_loose_cctv_id(value: str) -> str:
 
 
 def _clean_question_csv_text(csv_text: str) -> str:
-    lines: list[str] = []
+    raw_lines: list[str] = []
     for line in csv_text.splitlines():
         stripped = line.strip()
         if not stripped:
@@ -163,8 +174,68 @@ def _clean_question_csv_text(csv_text: str) -> str:
             stripped = stripped[lowered.index("question id") :]
         elif stripped.startswith("#"):
             continue
-        lines.append(stripped.rstrip("."))
+        raw_lines.append(stripped.rstrip("."))
+
+    if not raw_lines:
+        return ""
+
+    if _is_question_header(raw_lines[0]):
+        header = raw_lines[0]
+        data_lines = raw_lines[1:]
+    else:
+        header = DEFAULT_QUESTION_HEADER
+        data_lines = raw_lines
+
+    expected_columns = len(next(csv.reader([header])))
+    lines: list[str] = [header]
+    pending: str | None = None
+    for line in data_lines:
+        if pending and _row_needs_query(pending, expected_columns) and not _looks_like_question_row(line):
+            lines.append(pending.rstrip(",") + "," + line)
+            pending = None
+            continue
+        if pending:
+            lines.append(pending)
+            pending = None
+        if _row_needs_query(line, expected_columns):
+            pending = line
+        else:
+            lines.append(line)
+
+    if pending:
+        lines.append(pending)
     return "\n".join(lines)
+
+
+def _is_question_header(line: str) -> bool:
+    try:
+        row = next(csv.reader([line]))
+    except csv.Error:
+        return False
+    headers = {_normalize_header(value) for value in row}
+    has_question_id = bool({"question_id", "id"} & headers)
+    has_query = bool({"query", "question"} & headers)
+    return has_question_id and has_query
+
+
+def _row_needs_query(line: str, expected_columns: int) -> bool:
+    try:
+        row = next(csv.reader([line]))
+    except csv.Error:
+        return False
+    return len(row) < expected_columns or (len(row) >= expected_columns and not row[expected_columns - 1].strip())
+
+
+def _looks_like_question_row(line: str) -> bool:
+    if _is_question_header(line):
+        return True
+    try:
+        row = next(csv.reader([line]))
+    except csv.Error:
+        return False
+    if len(row) < 2:
+        return False
+    return bool(re.fullmatch(r"Q[\w\-]*", row[0].strip(), flags=re.IGNORECASE))
 
 
 def _normalize_header(value: str) -> str:
