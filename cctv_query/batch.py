@@ -129,16 +129,22 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
     if result.out_of_range:
         return result.answer
 
+    if result.spec.vehicle_ordinal is not None:
+        return _format_vehicle_ordinal(result)
     if result.spec.wants_unclosed_entry_count and result.spec.cross_breakdowns:
         return _format_cross_counts(result, result.spec.cross_breakdowns[0])
     if result.spec.wants_unclosed_entry_count:
         return f"[entry_without_exit:{result.count}]"
     if result.spec.wants_event_breakdown:
         return _format_event_counts(Counter(record.event for record in result.matches))
+    mode = _answer_mode(query_text)
+    if mode in CROSS_MODES and mode in result.spec.cross_breakdowns:
+        return _format_cross_counts(result, mode)
+    if result.spec.cross_breakdowns:
+        return _format_cross_counts(result, result.spec.cross_breakdowns[0])
     if result.spec.wants_peak_hour or result.spec.wants_hour_breakdown or result.spec.wants_peak_camera or result.spec.wants_camera_breakdown:
         return _format_aggregation_csv(result.aggregation or {})
 
-    mode = _answer_mode(query_text)
     if mode in CROSS_MODES:
         return _format_cross_counts(result, mode)
     if mode == "origin_brand":
@@ -185,6 +191,16 @@ def _format_event_counts(counts: Counter[str]) -> str:
     items = [(event, counts[event]) for event in ("entry", "exit", "pass") if counts[event]]
     extras = sorted((event, count) for event, count in counts.items() if event not in {"entry", "exit", "pass"})
     return "[" + ", ".join(f"{event}:{count}" for event, count in items + extras) + "]"
+
+
+def _format_vehicle_ordinal(result: QueryResult) -> str:
+    if not result.routes:
+        return "[]"
+    route = result.routes[0]
+    representative = route.representative
+    label = "last" if result.spec.vehicle_ordinal == -1 else str(result.spec.vehicle_ordinal)
+    vehicle = f"{representative.brand} {representative.color} {representative.vehicle_type}"
+    return f"[{label}:{vehicle} {route.start_time}-{route.end_time} {'->'.join(route.path)}]"
 
 
 def _format_aggregation_csv(aggregation: dict) -> str:

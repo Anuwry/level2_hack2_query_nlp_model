@@ -153,6 +153,35 @@ class CCTVQueryEngine:
 
         routes = countable_vehicle_routes(matches, spec)
         route_matches = [record for route in routes for record in route.detections]
+        clarifications = tuple(self.optional_clarifications(spec))
+        if spec.vehicle_ordinal is not None:
+            ordinal_spec = replace(
+                spec,
+                cctv_id=None,
+                event=None,
+                events=(),
+                start_time=None,
+                end_time=None,
+                start_seconds=None,
+                end_seconds=None,
+            )
+            ordinal_matches = self.filter_records(ordinal_spec)
+            ordinal_routes = countable_vehicle_routes(ordinal_matches, spec)
+            sorted_routes = _sort_ordinal_routes(ordinal_routes, spec)
+            selected_route = _select_ordinal_route(sorted_routes, spec.vehicle_ordinal)
+            selected_routes = [selected_route] if selected_route else []
+            selected_matches = [record for route in selected_routes for record in route.detections]
+            return QueryResult(
+                spec=spec,
+                matches=selected_matches,
+                routes=selected_routes,
+                summary=summarize_routes(selected_routes),
+                answer=format_vehicle_ordinal_answer(spec, selected_route, len(sorted_routes)),
+                warnings=warnings,
+                clarifications=clarifications,
+                answer_options=tuple(self.answer_options(spec)),
+                aggregation=_vehicle_ordinal_aggregation(spec, selected_route, len(sorted_routes)),
+            )
         if spec.wants_event_breakdown or _needs_detection_cross_summary(spec):
             summary = summarize(matches)
         elif spec.wants_distinct_vehicle_count:
@@ -160,7 +189,6 @@ class CCTVQueryEngine:
         else:
             summary = summarize_routes(routes)
         answer = format_answer(spec, summary, routes=routes)
-        clarifications = tuple(self.optional_clarifications(spec))
         return QueryResult(
             spec=spec,
             matches=matches if spec.wants_event_breakdown or _needs_detection_cross_summary(spec) else route_matches,
@@ -361,6 +389,7 @@ def _has_any_structured_constraint(spec: QuerySpec) -> bool:
             spec.wants_distinct_vehicle_count,
             spec.wants_event_breakdown,
             spec.wants_unclosed_entry_count,
+            spec.vehicle_ordinal is not None,
             spec.wants_peak_hour,
             spec.wants_peak_camera,
             spec.wants_hour_breakdown,
@@ -640,6 +669,64 @@ def format_aggregation_answer(spec: QuerySpec, aggregation: dict) -> str:
     if spec.language == "th":
         return _format_thai_aggregation_answer(spec, aggregation)
     return _format_english_aggregation_answer(spec, aggregation)
+
+
+def format_vehicle_ordinal_answer(spec: QuerySpec, route: VehicleRoute | None, total_routes: int) -> str:
+    if spec.language == "th":
+        return _format_thai_vehicle_ordinal_answer(spec, route, total_routes)
+    return _format_english_vehicle_ordinal_answer(spec, route, total_routes)
+
+
+def _select_ordinal_route(routes: list[VehicleRoute], ordinal: int) -> VehicleRoute | None:
+    if not routes:
+        return None
+    if ordinal == -1:
+        return routes[-1]
+    if ordinal <= 0 or ordinal > len(routes):
+        return None
+    return routes[ordinal - 1]
+
+
+def _sort_ordinal_routes(routes: list[VehicleRoute], spec: QuerySpec) -> list[VehicleRoute]:
+    indexed_routes: list[tuple[tuple, VehicleRoute]] = []
+    for route in routes:
+        anchor = _ordinal_anchor_record(route, spec)
+        if anchor is None:
+            continue
+        indexed_routes.append(
+            (
+                (
+                    anchor.date,
+                    anchor.timestamp_seconds,
+                    anchor.cctv_id,
+                    route.representative.brand.casefold(),
+                    route.representative.color.casefold(),
+                    route.representative.vehicle_type.casefold(),
+                ),
+                route,
+            )
+        )
+    return [route for _, route in sorted(indexed_routes, key=lambda item: item[0])]
+
+
+def _ordinal_anchor_record(route: VehicleRoute, spec: QuerySpec) -> CCTVRecord | None:
+    candidates = [record for record in route.detections if _matches(record, spec)]
+    if not candidates:
+        return None
+    return min(candidates, key=lambda record: (record.date, record.timestamp_seconds, record.cctv_id))
+
+
+def _vehicle_ordinal_aggregation(spec: QuerySpec, route: VehicleRoute | None, total_routes: int) -> dict:
+    ordinal = spec.vehicle_ordinal
+    anchor = _ordinal_anchor_record(route, spec) if route else None
+    return {
+        "type": "vehicle_ordinal",
+        "ordinal": ordinal,
+        "label": _ordinal_label(ordinal),
+        "total_count": total_routes,
+        "anchor": anchor.to_dict() if anchor else None,
+        "route": route.to_dict() if route else None,
+    }
 
 
 def _matches(record: CCTVRecord, spec: QuerySpec) -> bool:
@@ -989,6 +1076,57 @@ def _format_english_aggregation_answer(spec: QuerySpec, aggregation: dict) -> st
     if spec.wants_camera_breakdown and not spec.wants_peak_camera:
         return f"Camera breakdown for {context}: {_format_aggregation_rows(aggregation)}"
     return f"The busiest camera for {metric} in {context} is {top_text}."
+
+
+def _format_thai_vehicle_ordinal_answer(spec: QuerySpec, route: VehicleRoute | None, total_routes: int) -> str:
+    context = _thai_context(spec)
+    label = _thai_ordinal_label(spec.vehicle_ordinal)
+    if total_routes == 0:
+        return f"ไม่พบรถไม่ซ้ำสำหรับ {context}"
+    if route is None:
+        return f"ไม่มีรถลำดับ {label} สำหรับ {context} (มีทั้งหมด {total_routes} คันไม่ซ้ำ)"
+    return (
+        f"รถลำดับ {label} สำหรับ {context} คือ {_route_vehicle_label(route)} "
+        f"เวลา {route.start_time}-{route.end_time} ผ่าน {_route_path(route)} "
+        f"(จากทั้งหมด {total_routes} คันไม่ซ้ำ, ตรวจพบ {route.event_count} ครั้ง)"
+    )
+
+
+def _format_english_vehicle_ordinal_answer(spec: QuerySpec, route: VehicleRoute | None, total_routes: int) -> str:
+    context = _english_context(spec)
+    label = _english_ordinal_label(spec.vehicle_ordinal)
+    if total_routes == 0:
+        return f"No unique vehicles for {context}."
+    if route is None:
+        return f"No vehicle at position {label} for {context}; there are {total_routes} unique vehicles."
+    return (
+        f"The {label} vehicle for {context} is {_route_vehicle_label(route)} "
+        f"from {route.start_time} to {route.end_time} via {_route_path(route)} "
+        f"({route.event_count} detections out of {total_routes} unique vehicles)."
+    )
+
+
+def _ordinal_label(ordinal: int | None) -> str:
+    if ordinal == -1:
+        return "last"
+    return str(ordinal or "")
+
+
+def _thai_ordinal_label(ordinal: int | None) -> str:
+    if ordinal == -1:
+        return "สุดท้าย"
+    return str(ordinal or "")
+
+
+def _english_ordinal_label(ordinal: int | None) -> str:
+    if ordinal == -1:
+        return "last"
+    if ordinal is None:
+        return ""
+    suffix = "th"
+    if ordinal % 100 not in {11, 12, 13}:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(ordinal % 10, "th")
+    return f"{ordinal}{suffix}"
 
 
 def _format_aggregation_rows(aggregation: dict, limit: int = 10) -> str:

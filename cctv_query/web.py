@@ -94,8 +94,11 @@ def _compose_question_from_payload(payload: dict) -> str:
     cctv_id = str(payload.get("cctv_id", "")).strip()
     start_time = str(payload.get("start_time", "")).strip()
     end_time = str(payload.get("end_time", "")).strip()
+    event = str(payload.get("event", "")).strip().casefold()
     if bool(start_time) != bool(end_time):
         raise ValueError("Please select both start and end time, or leave both empty.")
+    if event and event not in {"entry", "exit", "pass"}:
+        raise ValueError("Event filter must be entry, exit, pass, or empty.")
 
     parts: list[str] = []
     if date:
@@ -104,6 +107,8 @@ def _compose_question_from_payload(payload: dict) -> str:
         parts.append(cctv_id)
     if start_time and end_time:
         parts.append(f"from {start_time} to {end_time}")
+    if event:
+        parts.append(f"event {event}")
     if question:
         parts.append(question)
     elif parts:

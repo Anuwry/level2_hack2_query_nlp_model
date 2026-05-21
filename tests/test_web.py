@@ -44,6 +44,7 @@ class WebApiTests(unittest.TestCase):
                 "cctv_id": "CCTV01",
                 "start_time": "08:00",
                 "end_time": "08:30",
+                "event": "pass",
             },
         )
 
@@ -52,6 +53,7 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(response["query"]["cctv_id"], "CCTV01")
         self.assertEqual(response["query"]["start_time"], "08:00:00")
         self.assertEqual(response["query"]["end_time"], "08:30:00")
+        self.assertEqual(response["query"]["event"], "pass")
 
     def test_handle_query_payload_allows_controls_only_query(self):
         response = handle_query_payload(
@@ -69,6 +71,10 @@ class WebApiTests(unittest.TestCase):
     def test_handle_query_payload_rejects_partial_time_filter(self):
         with self.assertRaises(ValueError):
             handle_query_payload(self.engine, {"question": "vehicles", "start_time": "08:00"})
+
+    def test_handle_query_payload_rejects_invalid_event_filter(self):
+        with self.assertRaises(ValueError):
+            handle_query_payload(self.engine, {"question": "vehicles", "event": "unknown"})
 
     def test_handle_metadata_payload_returns_filter_options(self):
         response = handle_metadata_payload(self.engine)

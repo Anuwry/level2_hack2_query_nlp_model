@@ -132,6 +132,18 @@ class BatchCsvTests(unittest.TestCase):
 
         self.assertEqual(response["answers"][0]["csv_answer"], "[entry:1]")
 
+    def test_answer_batch_questions_prefers_cross_summary_over_empty_aggregation(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "12:01:00", "Toyota", "Gray", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "13:01:00", "Honda", "White", "Car", event="entry"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,12:00:00 - 14:00:00,entry vehicles by hour and event\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[(12:00-12:59, entry):1, (13:00-13:59, entry):1]")
+
     def test_answer_batch_questions_outputs_entry_without_exit_answer(self):
         engine = CCTVQueryEngine(
             [

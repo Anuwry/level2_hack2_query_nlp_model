@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CCTV Query</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260521-context-followup2" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260521-answer-mode1" />
   </head>
   <body>
     <main class="app-shell">
@@ -58,6 +58,15 @@
             <span>สิ้นสุด</span>
             <input id="endTimeFilter" type="time" step="1" />
           </label>
+          <div class="filter-field filter-field-wide">
+            <span>Event</span>
+            <div class="segmented-control" role="group" aria-label="เลือก event">
+              <button type="button" class="segment-button active" data-event-filter="" aria-pressed="true">All</button>
+              <button type="button" class="segment-button" data-event-filter="entry" aria-pressed="false">Entry</button>
+              <button type="button" class="segment-button" data-event-filter="exit" aria-pressed="false">Exit</button>
+              <button type="button" class="segment-button" data-event-filter="pass" aria-pressed="false">Pass</button>
+            </div>
+          </div>
         </div>
 
         <section class="quick-panel" aria-labelledby="quick-title">
@@ -189,6 +198,11 @@
         </section>
 
         <section class="tab-panel" id="csvPanel" data-panel="csv">
+          <div class="csv-toolbar" id="csvAnswerToolbar" hidden>
+            <label for="csvAnswerMode">CSV answer</label>
+            <select id="csvAnswerMode"></select>
+            <span id="csvAnswerMeta" class="route-meta">Auto</span>
+          </div>
           <div class="table-wrap csv-results">
             <table>
               <thead>
@@ -242,6 +256,6 @@
       </section>
     </div>
 
-    <script src="/static/app.js?v=20260521-context-followup2"></script>
+    <script src="/static/app.js?v=20260521-answer-mode1"></script>
   </body>
 </html>

@@ -7,6 +7,7 @@ const dateFilter = document.querySelector("#dateFilter");
 const cctvFilter = document.querySelector("#cctvFilter");
 const startTimeFilter = document.querySelector("#startTimeFilter");
 const endTimeFilter = document.querySelector("#endTimeFilter");
+const eventFilterButtons = document.querySelectorAll("[data-event-filter]");
 const csvForm = document.querySelector("#csvForm");
 const csvInput = document.querySelector("#csvInput");
 const csvFile = document.querySelector("#csvFile");
@@ -25,6 +26,9 @@ const statusPill = document.querySelector("#statusPill");
 const answerOutput = document.querySelector("#answerOutput");
 const jsonOutput = document.querySelector("#jsonOutput");
 const csvOutput = document.querySelector("#csvOutput");
+const csvAnswerToolbar = document.querySelector("#csvAnswerToolbar");
+const csvAnswerMode = document.querySelector("#csvAnswerMode");
+const csvAnswerMeta = document.querySelector("#csvAnswerMeta");
 const sqlTableSelect = document.querySelector("#sqlTableSelect");
 const sqlTableHead = document.querySelector("#sqlTableHead");
 const sqlRows = document.querySelector("#sqlRows");
@@ -64,6 +68,28 @@ const csvSample = `Question ID,CCTV ID,Time Range,Query
 Q1,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อและสี
 Q2,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อ
 Q3,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามสี`;
+const CSV_ANSWER_LABELS = {
+  auto: "Auto",
+  count: "Count",
+  detections: "Detections",
+  brand: "Brand",
+  color: "Color",
+  type: "Type",
+  event: "Event",
+  origin: "Country",
+  brand_color: "Brand × Color",
+  origin_brand: "Country × Brand",
+  origin_type: "Country × Type",
+  brand_type: "Brand × Type",
+  camera_event: "Camera × Event",
+  hour_event: "Hour × Event",
+  color_type: "Color × Type",
+  origin_color: "Country × Color",
+  route_od: "Start × End",
+  brand_route: "Brand × Route",
+  unclosed_entry_camera: "Open Entry × Camera",
+  routes: "Vehicle Routes",
+};
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -120,6 +146,7 @@ clearButton.addEventListener("click", () => {
   cctvFilter.value = "";
   startTimeFilter.value = "";
   endTimeFilter.value = "";
+  setEventFilter("");
   questionInput.focus();
 });
 
@@ -176,6 +203,9 @@ clearCsvButton.addEventListener("click", () => {
   latestBatch = null;
   exportCsvButton.disabled = true;
   csvOutput.textContent = "Question ID,Answer";
+  csvAnswerToolbar.hidden = true;
+  csvAnswerMode.innerHTML = "";
+  csvAnswerMeta.textContent = "";
   batchRows.innerHTML = "";
 });
 
@@ -307,6 +337,16 @@ document.querySelectorAll("[data-summary-mode][data-question]").forEach((button)
   button.addEventListener("click", () => runPresetQuestion(button.dataset.question || "", button.dataset.summaryMode || null));
 });
 
+eventFilterButtons.forEach((button) => {
+  button.addEventListener("click", () => setEventFilter(button.dataset.eventFilter || ""));
+});
+
+csvAnswerMode.addEventListener("change", () => {
+  if (latestResult && !Array.isArray(latestResult.answers)) {
+    updateSingleCsvAnswer(latestResult, csvAnswerMode.value);
+  }
+});
+
 followUpActions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-followup-question]");
   if (!button) {
@@ -337,19 +377,8 @@ function renderResult(result) {
   answerOutput.classList.remove("error");
   answerOutput.textContent = answerText(result);
   jsonOutput.textContent = JSON.stringify(result, null, 2);
-  csvOutput.textContent = result.answers_csv || "Question ID,Answer";
-  renderBatchRows(
-    result.csv_answer
-      ? [
-          {
-            question_id: result.question_id || "Q1",
-            answer: result.answer || "",
-            csv_answer: result.csv_answer,
-          },
-        ]
-      : []
-  );
-  exportCsvButton.disabled = !result.answers_csv;
+  renderCsvAnswerModeSelector(result);
+  updateSingleCsvAnswer(result, csvAnswerMode.value || "auto");
   countMetric.textContent = result.count ?? 0;
   eventMetric.textContent = result.event_count ?? 0;
   routeMetric.textContent = Array.isArray(result.routes) ? result.routes.length : 0;
@@ -367,6 +396,9 @@ function renderBatchResult(batch) {
     .join("\n\n");
   jsonOutput.textContent = JSON.stringify(batch, null, 2);
   csvOutput.textContent = batch.answers_csv || "Question ID,Answer";
+  csvAnswerToolbar.hidden = true;
+  csvAnswerMode.innerHTML = "";
+  csvAnswerMeta.textContent = "";
   countMetric.textContent = rows.length;
   eventMetric.textContent = rows.reduce((total, row) => total + (row.event_count || 0), 0);
   routeMetric.textContent = "-";
@@ -378,6 +410,126 @@ function renderBatchResult(batch) {
   summaryRows.innerHTML = "";
   renderBatchRows(rows);
   exportCsvButton.disabled = !batch.answers_csv;
+}
+
+function renderCsvAnswerModeSelector(result) {
+  const modes = availableCsvAnswerModes(result);
+  csvAnswerMode.innerHTML = modes
+    .map((mode) => `<option value="${escapeHtml(mode)}">${escapeHtml(CSV_ANSWER_LABELS[mode] || mode)}</option>`)
+    .join("");
+  csvAnswerMode.value = modes.includes("auto") ? "auto" : modes[0] || "";
+  csvAnswerToolbar.hidden = modes.length <= 1;
+  csvAnswerMeta.textContent = csvAnswerMode.value ? "เลือกได้จาก summary เดิม" : "";
+}
+
+function availableCsvAnswerModes(result) {
+  const modes = ["auto", "count", "detections"];
+  const summary = result.summary || {};
+  if (hasNamedCounts(summary.brand_counts)) modes.push("brand");
+  if (hasNamedCounts(summary.color_counts)) modes.push("color");
+  if (hasNamedCounts(summary.type_counts)) modes.push("type");
+  if (hasNamedCounts(summary.event_counts)) modes.push("event");
+  if (hasNamedCounts(summary.origin_counts)) modes.push("origin");
+  if ((summary.brand_color_counts || []).length) modes.push("brand_color");
+  Object.keys(CSV_ANSWER_LABELS)
+    .filter((mode) => CROSS_SUMMARY_MODES.has(mode))
+    .forEach((mode) => {
+      if ((summary.cross_counts?.[mode] || []).length) {
+        modes.push(mode);
+      }
+    });
+  if ((result.routes || []).length) {
+    modes.push("routes");
+  }
+  return [...new Set(modes)];
+}
+
+function updateSingleCsvAnswer(result, mode) {
+  const csvAnswer = csvAnswerForMode(result, mode);
+  const row = {
+    question_id: result.question_id || "Q1",
+    answer: result.answer || "",
+    csv_answer: csvAnswer,
+  };
+  const answersCsv = renderAnswersCsv([row]);
+  csvOutput.textContent = answersCsv;
+  renderBatchRows([row]);
+  latestBatch = { answers_csv: answersCsv };
+  exportCsvButton.disabled = false;
+  csvAnswerMeta.textContent = mode === "auto" ? "จากคำถามเดิม" : CSV_ANSWER_LABELS[mode] || mode;
+}
+
+function csvAnswerForMode(result, mode) {
+  const summary = result.summary || {};
+  if (mode === "auto") return result.csv_answer || "";
+  if (mode === "count") return String(result.count ?? 0);
+  if (mode === "detections") return String(result.event_count ?? 0);
+  if (mode === "brand") return formatNamedCounts(summary.brand_counts);
+  if (mode === "color") return formatNamedCounts(summary.color_counts);
+  if (mode === "type") return formatNamedCounts(summary.type_counts);
+  if (mode === "event") return formatNamedCounts(summary.event_counts, ["entry", "exit", "pass"]);
+  if (mode === "origin") return formatNamedCounts(summary.origin_counts);
+  if (mode === "brand_color") {
+    return formatPairRows(summary.brand_color_counts || [], "brand", "color");
+  }
+  if (CROSS_SUMMARY_MODES.has(mode)) {
+    return formatPairRows(summary.cross_counts?.[mode] || [], "left", "right");
+  }
+  if (mode === "routes") {
+    return formatRouteRows(result.routes || []);
+  }
+  return result.csv_answer || "";
+}
+
+function hasNamedCounts(counts) {
+  return Object.keys(counts || {}).length > 0;
+}
+
+function formatNamedCounts(counts, preferredOrder = []) {
+  const entries = Object.entries(counts || {});
+  const order = new Map(preferredOrder.map((name, index) => [name, index]));
+  const sorted = entries.sort((a, b) => {
+    const orderA = order.has(a[0]) ? order.get(a[0]) : Number.MAX_SAFE_INTEGER;
+    const orderB = order.has(b[0]) ? order.get(b[0]) : Number.MAX_SAFE_INTEGER;
+    return orderA - orderB || Number(b[1]) - Number(a[1]) || String(a[0]).localeCompare(String(b[0]));
+  });
+  return "[" + sorted.map(([name, count]) => `${name}:${count}`).join(", ") + "]";
+}
+
+function formatPairRows(rows, leftKey, rightKey) {
+  const sorted = [...rows].sort(
+    (a, b) =>
+      Number(b.count) - Number(a.count) ||
+      String(a[leftKey]).localeCompare(String(b[leftKey])) ||
+      String(a[rightKey]).localeCompare(String(b[rightKey]))
+  );
+  return "[" + sorted.map((row) => `(${row[leftKey]}, ${row[rightKey]}):${row.count}`).join(", ") + "]";
+}
+
+function formatRouteRows(routes) {
+  return (
+    "[" +
+    routes
+      .map((route, index) => {
+        const label = `${route.brand} ${route.color} ${route.type}`;
+        const path = (route.path || []).join("->");
+        return `${index + 1}:${label} ${route.start_time}-${route.end_time} ${path}`;
+      })
+      .join(", ") +
+    "]"
+  );
+}
+
+function renderAnswersCsv(rows) {
+  return ["Question ID,Answer", ...rows.map((row) => `${csvCell(row.question_id)},${csvCell(row.csv_answer)}`)].join("\n") + "\n";
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+  return text;
 }
 
 function renderSqlResult(payload) {
@@ -473,10 +625,11 @@ function renderFollowUpActions(result) {
 
 function followUpActionsForResult(result) {
   const mode = summaryModeForResult(result);
-  const eventFocused = mode === "event" || mode === "camera_event" || mode === "hour_event" || Boolean(result.query?.event);
+  const query = result.query || {};
+  const eventFocused = mode === "event" || mode === "camera_event" || mode === "hour_event" || Boolean(query.event);
   const withContext = (action) => ({
     ...action,
-    question: buildFollowUpQuestion(result.query || {}, action),
+    question: buildFollowUpQuestion(query, action),
   });
   if (!eventFocused) {
     return [
@@ -484,7 +637,14 @@ function followUpActionsForResult(result) {
       { label: "ดู Type", question: "รถทั้งหมดตามประเภทรถ", mode: "type" },
       { label: "ดู Color", question: "รถทั้งหมดตามสี", mode: "color" },
       { label: "ดู Country", question: "รถทั้งหมดตามประเทศ", mode: "origin" },
-    ].map(withContext);
+      { label: "Country × Brand", question: "รถทั้งหมดตามประเทศและยี่ห้อ", mode: "origin_brand" },
+      { label: "Country × Type", question: "รถทั้งหมดตามประเทศและประเภทรถ", mode: "origin_type" },
+      { label: "Country × Color", question: "รถทั้งหมดตามประเทศและสี", mode: "origin_color" },
+      { label: "Brand × Type", question: "รถทั้งหมดตามยี่ห้อและประเภทรถ", mode: "brand_type" },
+      { label: "Color × Type", question: "รถทั้งหมดตามสีและประเภทรถ", mode: "color_type" },
+      { label: "Brand × Route", question: "แต่ละยี่ห้อใช้เส้นทางไหนบ่อยสุด", mode: "brand_route" },
+      { label: "Start × End", question: "รถเดินทางจากกล้องไหนไปกล้องไหนมากที่สุด", mode: "route_od" },
+    ].filter((action) => followUpActionConnects(query, action, mode)).map(withContext);
   }
 
   return [
@@ -495,7 +655,7 @@ function followUpActionsForResult(result) {
     { label: "เฉพาะ pass", question: "event pass vehicles", mode: "event" },
     { label: "entry ไม่ exit", question: "entry without exit", mode: "event" },
     { label: "entry ไม่ exit × กล้อง", question: "รถที่ entry แล้วไม่ exit แยกตามกล้อง entry", mode: "unclosed_entry_camera" },
-  ].map(withContext);
+  ].filter((action) => followUpActionConnects(query, action, mode)).map(withContext);
 }
 
 function buildFollowUpQuestion(query, action) {
@@ -512,6 +672,90 @@ function buildFollowUpQuestion(query, action) {
   });
 }
 
+function followUpActionConnects(query, action, currentMode) {
+  if (!hasFollowUpContext(query)) {
+    return false;
+  }
+  if (action.mode === currentMode && !action.event && !action.unclosedEntry) {
+    return false;
+  }
+
+  switch (action.mode) {
+    case "origin_brand":
+      return hasOriginContext(query) || hasBrandContext(query);
+    case "origin_type":
+      return hasOriginContext(query) || hasTypeContext(query);
+    case "origin_color":
+      return hasOriginContext(query) || hasColorContext(query);
+    case "brand_type":
+      return hasBrandContext(query) || hasTypeContext(query);
+    case "color_type":
+      return hasColorContext(query) || hasTypeContext(query);
+    case "brand_route":
+      return hasBrandContext(query);
+    case "route_od":
+      return hasVehicleContext(query) && !query.cctv_id;
+    case "camera_event":
+      return hasEventContext(query) && !query.cctv_id;
+    case "hour_event":
+      return hasEventContext(query);
+    case "unclosed_entry_camera":
+      return !query.cctv_id && (hasEventContext(query) || hasVehicleContext(query));
+    default:
+      return false;
+  }
+}
+
+function hasFollowUpContext(query) {
+  return Boolean(
+    query.date ||
+      query.cctv_id ||
+      query.start_time ||
+      query.end_time ||
+      hasVehicleContext(query) ||
+      hasEventContext(query)
+  );
+}
+
+function hasVehicleContext(query) {
+  return hasBrandContext(query) || hasOriginContext(query) || hasColorContext(query) || hasTypeContext(query);
+}
+
+function hasBrandContext(query) {
+  return Boolean(query.brand);
+}
+
+function hasOriginContext(query) {
+  const crossBreakdowns = query.cross_breakdowns || [];
+  return Boolean(
+    (Array.isArray(query.brand_origins) && query.brand_origins.length) ||
+      query.wants_origin_breakdown ||
+      query.wants_origin_brand_breakdown ||
+      crossBreakdowns.some((name) => String(name).startsWith("origin_"))
+  );
+}
+
+function hasColorContext(query) {
+  return Boolean(query.color || (Array.isArray(query.colors) && query.colors.length));
+}
+
+function hasTypeContext(query) {
+  return Boolean(query.vehicle_type);
+}
+
+function hasEventContext(query) {
+  const crossBreakdowns = query.cross_breakdowns || [];
+  return Boolean(
+    query.event ||
+      (Array.isArray(query.events) && query.events.length) ||
+      query.wants_event_breakdown ||
+      query.wants_unclosed_entry_count ||
+      crossBreakdowns.includes("camera_event") ||
+      crossBreakdowns.includes("hour_event") ||
+      crossBreakdowns.includes("unclosed_entry_camera")
+  );
+}
+
 function followUpButtonHtml(action) {
   return `
     <button
@@ -519,6 +763,7 @@ function followUpButtonHtml(action) {
       class="quick-chip"
       data-followup-question="${escapeHtml(action.question)}"
       data-summary-mode="${escapeHtml(action.mode || "")}"
+      title="${escapeHtml(action.question)}"
     >${escapeHtml(action.label)}</button>
   `;
 }
@@ -789,11 +1034,25 @@ function selectedFilters() {
     cctv_id: cctvFilter.value,
     start_time: startTimeFilter.value,
     end_time: endTimeFilter.value,
+    event: selectedEventFilter(),
   };
 }
 
 function hasSelectedFilters(filters) {
-  return Boolean(filters.date || filters.cctv_id || filters.start_time || filters.end_time);
+  return Boolean(filters.date || filters.cctv_id || filters.start_time || filters.end_time || filters.event);
+}
+
+function selectedEventFilter() {
+  const active = document.querySelector("[data-event-filter].active");
+  return active?.dataset.eventFilter || "";
+}
+
+function setEventFilter(value) {
+  eventFilterButtons.forEach((button) => {
+    const selected = (button.dataset.eventFilter || "") === value;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
 }
 
 async function loadMetadata() {
@@ -1064,6 +1323,9 @@ function renderError(message) {
   answerOutput.textContent = message;
   jsonOutput.textContent = "{}";
   csvOutput.textContent = "Question ID,Answer";
+  csvAnswerToolbar.hidden = true;
+  csvAnswerMode.innerHTML = "";
+  csvAnswerMeta.textContent = "";
   exportCsvButton.disabled = true;
   countMetric.textContent = "-";
   eventMetric.textContent = "-";

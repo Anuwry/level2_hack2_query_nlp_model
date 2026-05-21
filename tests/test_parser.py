@@ -154,6 +154,27 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertEqual(spec.vehicle_type, "Bus")
         self.assertTrue(spec.wants_distinct_vehicle_count)
 
+    def test_parse_vehicle_ordinal_question(self):
+        spec = parse_question("วันที่ 12 คันไหนมาคันแรก", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.vehicle_ordinal, 1)
+        self.assertTrue(spec.wants_vehicle_list)
+        self.assertTrue(spec.wants_distinct_vehicle_count)
+
+    def test_parse_numbered_vehicle_ordinal_question(self):
+        spec = parse_question("day 12 which is the 3rd vehicle", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.vehicle_ordinal, 3)
+
+    def test_parse_thai_entry_vehicle_ordinal_question(self):
+        spec = parse_question("วันที่ 12 รถเข้าคันที่ 31 คือคันไหน", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.event, "entry")
+        self.assertEqual(spec.vehicle_ordinal, 31)
+
     def test_parse_multiple_exact_colors(self):
         spec = parse_question(
             "มีรถสี Red and Red-White กี่คัน",

@@ -80,6 +80,7 @@ class QuerySpec:
     wants_distinct_vehicle_count: bool = False
     wants_event_breakdown: bool = False
     wants_unclosed_entry_count: bool = False
+    vehicle_ordinal: int | None = None
     wants_peak_hour: bool = False
     wants_peak_camera: bool = False
     wants_hour_breakdown: bool = False

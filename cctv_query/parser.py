@@ -178,6 +178,10 @@ def parse_question(
     wants_route = _wants_route(text)
     wants_vehicle_list = _wants_vehicle_list(text)
     wants_distinct_vehicle_count = _wants_distinct_vehicle_count(text)
+    vehicle_ordinal = _extract_vehicle_ordinal(text)
+    if vehicle_ordinal is not None:
+        wants_vehicle_list = True
+        wants_distinct_vehicle_count = True
     out_of_range_fields = ("date",) if date_out_of_range else ()
 
     return QuerySpec(
@@ -205,6 +209,7 @@ def parse_question(
         wants_distinct_vehicle_count=wants_distinct_vehicle_count,
         wants_event_breakdown=wants_event_breakdown,
         wants_unclosed_entry_count=wants_unclosed_entry_count,
+        vehicle_ordinal=vehicle_ordinal,
         wants_peak_hour=wants_peak_hour,
         wants_peak_camera=wants_peak_camera,
         wants_hour_breakdown=wants_hour_breakdown,
@@ -708,6 +713,44 @@ def _wants_distinct_vehicle_count(text: str) -> bool:
             "deduplicated",
         )
     )
+
+
+def _extract_vehicle_ordinal(text: str) -> int | None:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    if any(term in compact_text for term in ("คันสุดท้าย", "รถคันสุดท้าย", "รถสุดท้าย", "last vehicle", "last car")):
+        return -1
+    if any(term in compact_text for term in ("คันแรก", "รถคันแรก", "รถแรก", "first vehicle", "first car")):
+        return 1
+    if "arrived first" in compact_text or "came first" in compact_text:
+        return 1
+
+    thai_match = re.search(r"(?:คันที่|รถคันที่|ลำดับที่)\s*(\d+)", compact_text)
+    if thai_match:
+        return int(thai_match.group(1))
+
+    english_number_match = re.search(r"\b(?:vehicle|car|bus|truck|motorcycle)\s+(?:number|#)\s*(\d+)\b", compact_text)
+    if english_number_match:
+        return int(english_number_match.group(1))
+
+    ordinal_match = re.search(r"\b(\d+)(?:st|nd|rd|th)\s+(?:vehicle|car|bus|truck|motorcycle)\b", compact_text)
+    if ordinal_match:
+        return int(ordinal_match.group(1))
+
+    word_ordinals = {
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+        "sixth": 6,
+        "seventh": 7,
+        "eighth": 8,
+        "ninth": 9,
+        "tenth": 10,
+    }
+    for word, value in word_ordinals.items():
+        if re.search(rf"\b{word}\s+(?:vehicle|car|bus|truck|motorcycle)\b", compact_text):
+            return value
+    return None
 
 
 def _wants_peak_hour(text: str) -> bool:

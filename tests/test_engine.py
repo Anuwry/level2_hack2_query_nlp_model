@@ -248,6 +248,65 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertIn("CCTV09 -> CCTV08 -> CCTV07 -> CCTV04", result.answer)
         self.assertIn("Mazda Blue Car", result.answer)
 
+    def test_vehicle_ordinal_question_returns_first_unique_vehicle_by_time(self):
+        result = self.engine.ask("วันที่ 12 คันไหนมาคันแรก")
+
+        self.assertEqual(result.spec.vehicle_ordinal, 1)
+        self.assertEqual(result.count, 1)
+        self.assertEqual(result.routes[0].representative.brand, "Toyota")
+        self.assertEqual(result.routes[0].start_time, "08:10:00")
+        self.assertIn("รถลำดับ 1", result.answer)
+        self.assertIn("Toyota Red Car", result.answer)
+
+    def test_vehicle_ordinal_question_returns_requested_position(self):
+        result = self.engine.ask("day 12 which is the 3rd vehicle")
+
+        self.assertEqual(result.spec.vehicle_ordinal, 3)
+        self.assertEqual(result.count, 1)
+        self.assertEqual(result.routes[0].representative.brand, "Isuzu")
+        self.assertEqual(result.routes[0].start_time, "10:30:00")
+        self.assertIn("The 3rd vehicle", result.answer)
+
+    def test_entry_vehicle_ordinal_uses_entry_order_but_returns_whole_route(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:05:00", "Toyota", "Red", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:10:00", "Honda", "White", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV03", "08:15:00", "Honda", "White", "Car", event="exit"),
+            ]
+        )
+
+        result = engine.ask("day 12 entry vehicle number 2")
+
+        self.assertEqual(result.spec.event, "entry")
+        self.assertEqual(result.spec.vehicle_ordinal, 2)
+        self.assertEqual(result.routes[0].representative.brand, "Honda")
+        self.assertEqual(result.routes[0].path, ["CCTV01", "CCTV03"])
+        self.assertEqual(result.event_count, 2)
+        self.assertEqual(result.aggregation["anchor"]["event"], "entry")
+        self.assertEqual(result.aggregation["anchor"]["timestamp"], "08:10:00")
+
+    def test_camera_entry_vehicle_ordinal_uses_camera_entry_anchor_and_full_route(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:05:00", "Toyota", "Red", "Car", event="pass"),
+                CCTVRecord.from_values("12-05-2026", "CCTV03", "08:08:00", "Toyota", "Red", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "09:00:00", "Honda", "White", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV04", "09:05:00", "Honda", "White", "Car", event="exit"),
+            ]
+        )
+
+        result = engine.ask("day 12 CCTV02 entry vehicle number 1")
+
+        self.assertEqual(result.spec.cctv_id, "CCTV02")
+        self.assertEqual(result.spec.event, "entry")
+        self.assertEqual(result.routes[0].representative.brand, "Honda")
+        self.assertEqual(result.routes[0].path, ["CCTV02", "CCTV04"])
+        self.assertEqual(result.aggregation["anchor"]["cctv_id"], "CCTV02")
+        self.assertEqual(result.aggregation["anchor"]["event"], "entry")
+
     def test_color_filter_is_exact_not_partial(self):
         red_result = self.engine.ask("CCTV07 on 2026-05-12 red vehicles")
         green_result = self.engine.ask("CCTV07 on 2026-05-12 green vehicles")

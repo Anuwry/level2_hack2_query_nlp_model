@@ -101,6 +101,7 @@ textarea,
 .filter-grid select,
 .filter-grid input,
 .csv-form input[type="file"],
+.csv-toolbar select,
 .sql-toolbar select,
 .modal-dialog select {
   width: 100%;
@@ -123,6 +124,7 @@ textarea {
 }
 
 textarea:focus,
+.csv-toolbar select:focus,
 .sql-toolbar select:focus,
 .modal-dialog select:focus {
   border-color: var(--accent);
@@ -206,7 +208,8 @@ button.compact {
   margin: 0;
 }
 
-.filter-grid span {
+.filter-grid span,
+.filter-field span {
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
@@ -214,11 +217,50 @@ button.compact {
   font-weight: 700;
 }
 
+.filter-field-wide {
+  grid-column: 1 / -1;
+}
+
 .filter-grid select,
 .filter-grid input {
   min-height: 36px;
   padding: 7px 9px;
   font-size: 13px;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.segment-button {
+  min-height: 34px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.segment-button:last-child {
+  border-right: 0;
+}
+
+.segment-button:hover {
+  background: var(--soft);
+  color: var(--accent-strong);
+}
+
+.segment-button.active {
+  background: var(--accent);
+  color: #fff;
 }
 
 .quick-panel {
@@ -518,6 +560,7 @@ th {
   overflow: auto;
 }
 
+.csv-toolbar,
 .sql-toolbar {
   display: grid;
   grid-template-columns: auto minmax(180px, 320px) minmax(0, 1fr);
@@ -527,10 +570,16 @@ th {
   padding: 10px 12px;
 }
 
+.csv-toolbar[hidden] {
+  display: none;
+}
+
+.csv-toolbar label,
 .sql-toolbar label {
   margin: 0;
 }
 
+.csv-toolbar select,
 .sql-toolbar select {
   padding: 8px 10px;
 }
@@ -653,6 +702,7 @@ code {
 
   .metric-strip,
   .summary-overview,
+  .csv-toolbar,
   .sql-toolbar {
     grid-template-columns: 1fr;
   }
