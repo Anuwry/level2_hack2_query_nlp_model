@@ -17,6 +17,19 @@
           <span class="status-pill" id="statusPill">Local</span>
         </div>
 
+        <section class="data-source-panel" aria-labelledby="data-source-title">
+          <div class="section-title">
+            <h2 id="data-source-title">Data CSV</h2>
+            <button type="button" id="refreshCsvFilesButton" class="secondary compact">Refresh</button>
+          </div>
+          <label for="dataCsvSelect">เลือกไฟล์ข้อมูลในโปรเจกต์</label>
+          <div class="data-source-row">
+            <select id="dataCsvSelect"></select>
+            <button type="button" id="applyCsvFileButton" class="secondary compact">Use</button>
+          </div>
+          <p class="data-source-meta" id="dataCsvMeta">Loading CSV files...</p>
+        </section>
+
         <form id="queryForm" class="query-form">
           <label for="question">คำถาม</label>
           <textarea
@@ -178,6 +191,21 @@
           <div class="summary-overview" id="summaryOverview"></div>
           <div class="summary-heading">
             <h2 id="summaryTitle">Current breakdown</h2>
+            <div class="summary-scope">
+              <select id="summaryScopeDate" aria-label="Summary date"></select>
+              <select id="summaryScopeCctv" aria-label="Summary CCTV"></select>
+              <input id="summaryScopeStart" type="time" step="1" aria-label="Summary start time" />
+              <input id="summaryScopeEnd" type="time" step="1" aria-label="Summary end time" />
+            </div>
+            <div class="summary-filter">
+              <span class="summary-filter-label">Filter rows</span>
+              <div id="summaryFilterChoices" class="summary-filter-choices" role="group" aria-label="Filter summary rows"></div>
+              <button type="button" id="clearSummaryFilterButton" class="secondary compact">All</button>
+              <span id="summaryFilterTotal" class="route-meta">Total: 0</span>
+            </div>
+          </div>
+          <div class="summary-compare-output" id="summaryCompareOutput">
+            กด Calc ในแต่ละแถวแล้วติ๊ก Compare เพื่อเทียบผลที่กรองแยกกัน
           </div>
           <div class="table-wrap">
             <table>

@@ -43,7 +43,7 @@ class SqlExchangeTests(unittest.TestCase):
         self.assertEqual(tables["required_output_view"]["row_count"], 18)
         self.assertEqual(
             tables["required_output_view"]["columns"],
-            ["Date", "CCTV_ID", "Timestamp", "Brand", "Color", "Type", "Event"],
+            ["Date", "CCTV_ID", "First_Seen", "Last_Seen", "Brand", "Color", "Type", "Event"],
         )
         self.assertEqual(tables["required_output_view"]["rows"][0]["CCTV_ID"], "CCTV01")
         self.assertEqual(tables["required_output_view"]["rows"][0]["Brand"], "Toyota")

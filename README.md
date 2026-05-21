@@ -4,6 +4,8 @@
 D:\sup_ai\query_mock\cctv_vehicle_log_routed.csv
 ```
 
+คู่มือเขียนคำถามให้ query ได้แม่นที่สุดอยู่ที่ [QUERY_GUIDE.md](QUERY_GUIDE.md)
+
 ## ใช้งานเร็ว
 
 รันจากโฟลเดอร์โปรเจค:

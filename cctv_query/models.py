@@ -16,6 +16,8 @@ class CCTVRecord:
     vehicle_type: str
     event: str = "pass"
     event_explicit: bool = False
+    last_seen: str = ""
+    last_seen_seconds: int = 0
 
     @classmethod
     def from_values(
@@ -27,6 +29,7 @@ class CCTVRecord:
         color: str,
         vehicle_type: str,
         event: str | None = None,
+        last_seen: str | None = None,
     ) -> "CCTVRecord":
         from cctv_query.normalization import (
             normalize_cctv_id,
@@ -37,6 +40,7 @@ class CCTVRecord:
         )
 
         normalized_time = normalize_time(timestamp)
+        normalized_last_seen = normalize_time(last_seen or timestamp)
         event_text = event.strip() if event is not None else ""
         return cls(
             date=normalize_date(date),
@@ -48,6 +52,8 @@ class CCTVRecord:
             vehicle_type=vehicle_type.strip(),
             event=normalize_event(event_text or "pass"),
             event_explicit=bool(event_text),
+            last_seen=normalized_last_seen,
+            last_seen_seconds=time_to_seconds(normalized_last_seen),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -65,9 +71,11 @@ class QuerySpec:
     start_seconds: int | None = None
     end_seconds: int | None = None
     brand: str | None = None
+    brands: tuple[str, ...] = ()
     brand_origins: tuple[str, ...] = ()
     color: str | None = None
     colors: tuple[str, ...] = ()
+    condition_groups: tuple[dict[str, Any], ...] = ()
     vehicle_type: str | None = None
     event: str | None = None
     events: tuple[str, ...] = ()
@@ -80,8 +88,16 @@ class QuerySpec:
     wants_distinct_vehicle_count: bool = False
     wants_event_breakdown: bool = False
     wants_unclosed_entry_count: bool = False
+    wants_presence_count: bool = False
+    presence_min_seconds: int | None = None
+    wants_tracking_duration: bool = False
     vehicle_ordinal: int | None = None
     wants_peak_hour: bool = False
+    wants_hour_average: bool = False
+    average_hours: int | None = None
+    count_operator: str | None = None
+    count_threshold: int | None = None
+    group_comparison: dict[str, Any] | None = None
     wants_peak_camera: bool = False
     wants_hour_breakdown: bool = False
     wants_camera_breakdown: bool = False
@@ -196,7 +212,7 @@ class VehicleRoute:
 
     @property
     def end_time(self) -> str:
-        return self.detections[-1].timestamp
+        return self.detections[-1].last_seen or self.detections[-1].timestamp
 
     @property
     def event_count(self) -> int:

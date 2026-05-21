@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TypeVar
 
 
-FIELDNAMES = ("Date", "CCTV_ID", "Timestamp", "Brand", "Color", "Type", "Event")
+FIELDNAMES = ("Date", "CCTV_ID", "First_Seen", "Last_Seen", "Brand", "Color", "Type", "Event")
 EVENTS = {"entry", "exit", "pass"}
 UNIQUE_VEHICLE_GAP_SECONDS = 30 * 60
 T = TypeVar("T")
@@ -81,10 +81,24 @@ COLOR_WEIGHTS = (
     ("Bronze", 4),
     ("Gold", 3),
     ("Green", 2),
+    ("Navy Blue", 2),
     ("Dark Green", 1),
+    ("Light Green", 1),
+    ("Metallic Green", 1),
+    ("Olive Green", 1),
     ("Red-White", 1),
     ("Blue-White", 1),
+    ("Bronze Gold", 1),
+    ("Bronze Gray", 1),
+    ("Bronze Silver", 1),
+    ("Charcoal", 1),
+    ("Chartreuse", 1),
+    ("Orange", 1),
+    ("Pink", 1),
+    ("Maroon", 1),
+    ("Slate Blue", 1),
     ("Yellow", 1),
+    ("Yellow-Green", 1),
 )
 
 
@@ -121,11 +135,13 @@ def generate_rows(
         signature = (date_text, brand.casefold(), color.casefold(), vehicle_type.casefold())
 
         for route_index, (cctv_id, offset) in enumerate(zip(route, offsets)):
+            first_seen_seconds = start_seconds + offset
             rows.append(
                 {
                     "Date": date_text,
                     "CCTV_ID": cctv_id,
-                    "Timestamp": _format_seconds(start_seconds + offset),
+                    "First_Seen": _format_seconds(first_seen_seconds),
+                    "Last_Seen": _format_seconds(first_seen_seconds + _track_duration_seconds(vehicle_type, rng)),
                     "Brand": brand,
                     "Color": color,
                     "Type": vehicle_type,
@@ -134,7 +150,7 @@ def generate_rows(
             )
         next_available_by_signature[signature] = start_seconds + offsets[-1] + UNIQUE_VEHICLE_GAP_SECONDS + 1
 
-    return sorted(rows, key=lambda row: (row["Date"], row["Timestamp"], row["CCTV_ID"], row["Brand"], row["Color"], row["Type"]))
+    return sorted(rows, key=lambda row: (row["Date"], row["First_Seen"], row["CCTV_ID"], row["Brand"], row["Color"], row["Type"]))
 
 
 def write_csv(rows: Sequence[dict[str, str]], path: str | Path) -> None:
@@ -173,6 +189,16 @@ def _event_for_route_position(index: int, route_length: int) -> str:
     if index == route_length - 1:
         return "exit"
     return "pass"
+
+
+def _track_duration_seconds(vehicle_type: str, rng: random.Random) -> int:
+    if vehicle_type == "Bus":
+        return rng.randint(18, 45)
+    if vehicle_type == "Truck":
+        return rng.randint(14, 38)
+    if vehicle_type == "Motorcycle":
+        return rng.randint(6, 22)
+    return rng.randint(8, 28)
 
 
 def _scheduled_vehicle(

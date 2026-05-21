@@ -136,12 +136,14 @@ def _append_required_output_view(tables: OrderedDict[str, SqlTable]) -> None:
 
     rows: list[dict[str, str]] = []
     for row in source.rows:
-        timestamp = row.get("first_seen_iso") or row.get("first_seen_ts") or ""
+        first_seen = row.get("first_seen_iso") or row.get("first_seen_ts") or ""
+        last_seen = row.get("last_seen_iso") or row.get("last_seen_ts") or first_seen
         rows.append(
             {
-                "Date": timestamp[:10],
+                "Date": first_seen[:10],
                 "CCTV_ID": row.get("camera_id", ""),
-                "Timestamp": timestamp,
+                "First_Seen": first_seen,
+                "Last_Seen": last_seen,
                 "Brand": row.get("brand") or "Unknown",
                 "Color": row.get("color") or "Unknown",
                 "Type": row.get("vehicle_type") or "Unknown",
@@ -150,7 +152,7 @@ def _append_required_output_view(tables: OrderedDict[str, SqlTable]) -> None:
         )
     tables["required_output_view"] = SqlTable(
         name="required_output_view",
-        columns=("Date", "CCTV_ID", "Timestamp", "Brand", "Color", "Type", "Event"),
+        columns=("Date", "CCTV_ID", "First_Seen", "Last_Seen", "Brand", "Color", "Type", "Event"),
         rows=tuple(rows),
     )
 

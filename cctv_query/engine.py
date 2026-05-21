@@ -82,11 +82,11 @@ class CCTVQueryEngine:
         warnings = tuple(self.query_warnings(spec))
         matches = self.filter_records(spec)
         if (
-            (spec.wants_peak_hour or spec.wants_hour_breakdown)
+            (spec.wants_peak_hour or spec.wants_hour_average or spec.wants_hour_breakdown)
             and not spec.wants_unclosed_entry_count
             and not spec.cross_breakdowns
         ):
-            aggregation = aggregate_records(matches, "hour")
+            aggregation = aggregate_records(matches, "hour", spec=spec)
             return QueryResult(
                 spec=spec,
                 matches=matches,
@@ -111,6 +111,24 @@ class CCTVQueryEngine:
                 routes=build_vehicle_routes(matches),
                 summary=summarize(matches),
                 answer=format_aggregation_answer(spec, aggregation),
+                warnings=warnings,
+                clarifications=tuple(self.optional_clarifications(spec)),
+                answer_options=tuple(self.answer_options(spec)),
+                aggregation=aggregation,
+            )
+
+        if spec.wants_presence_count or spec.wants_tracking_duration:
+            matches = _presence_filtered_records(matches, spec) if spec.wants_presence_count else matches
+            routes = build_vehicle_routes(matches)
+            summary = summarize_routes(routes)
+            aggregation = aggregate_tracking_duration(matches, routes, spec)
+            answer = format_tracking_duration_answer(spec, summary, aggregation)
+            return QueryResult(
+                spec=spec,
+                matches=matches,
+                routes=routes,
+                summary=summary,
+                answer=answer,
                 warnings=warnings,
                 clarifications=tuple(self.optional_clarifications(spec)),
                 answer_options=tuple(self.answer_options(spec)),
@@ -189,6 +207,7 @@ class CCTVQueryEngine:
         else:
             summary = summarize_routes(routes)
         answer = format_answer(spec, summary, routes=routes)
+        aggregation = group_comparison_aggregation(spec, summary)
         return QueryResult(
             spec=spec,
             matches=matches if spec.wants_event_breakdown or _needs_detection_cross_summary(spec) else route_matches,
@@ -198,6 +217,7 @@ class CCTVQueryEngine:
             warnings=warnings,
             clarifications=clarifications,
             answer_options=tuple(self.answer_options(spec)),
+            aggregation=aggregation,
         )
 
     def filter_records(self, spec: QuerySpec) -> list[CCTVRecord]:
@@ -207,10 +227,30 @@ class CCTVQueryEngine:
         reasons = list(spec.out_of_range_fields)
         if spec.date and spec.date not in self.known_dates:
             _append_unique(reasons, "date")
+        for group in spec.condition_groups:
+            group_date = group.get("date")
+            if isinstance(group_date, str) and group_date not in self.known_dates:
+                _append_unique(reasons, "date")
+            for brand in _group_values(group, "brands"):
+                if not _casefold_contains(self.known_brands, brand):
+                    _append_unique(reasons, "brand")
+                    break
+            for color in _group_values(group, "colors"):
+                if not _casefold_contains(self.known_colors, color) and not _related_color_values(color, self.known_colors):
+                    _append_unique(reasons, "color")
+                    break
+            group_type = group.get("vehicle_type")
+            if isinstance(group_type, str) and not _casefold_contains(self.known_vehicle_types, group_type):
+                _append_unique(reasons, "vehicle_type")
+            group_event = group.get("event")
+            if isinstance(group_event, str) and not _casefold_contains(self.known_events, group_event):
+                _append_unique(reasons, "event")
         if spec.cctv_id and spec.cctv_id not in self.known_cctv_ids:
             _append_unique(reasons, "cctv_id")
-        if spec.brand and not _casefold_contains(self.known_brands, spec.brand):
-            _append_unique(reasons, "brand")
+        for brand in spec.brands or ((spec.brand,) if spec.brand else ()):
+            if not _casefold_contains(self.known_brands, brand):
+                _append_unique(reasons, "brand")
+                break
         for color in spec.colors or ((spec.color,) if spec.color else ()):
             if not _casefold_contains(self.known_colors, color) and not _related_color_values(color, self.known_colors):
                 _append_unique(reasons, "color")
@@ -238,11 +278,13 @@ class CCTVQueryEngine:
             return []
 
         warnings: list[str] = []
-        if not spec.date:
+        if not spec.date and not spec.condition_groups:
             warnings.append(_localized_warning(spec.language, "date"))
         if not spec.cctv_id and not (spec.wants_peak_camera or spec.wants_camera_breakdown):
             warnings.append(_localized_warning(spec.language, "cctv"))
-        if not (spec.start_time and spec.end_time) and not (spec.wants_peak_hour or spec.wants_hour_breakdown):
+        if not (spec.start_time and spec.end_time) and not (
+            spec.wants_peak_hour or spec.wants_hour_average or spec.wants_hour_breakdown
+        ):
             warnings.append(_localized_warning(spec.language, "time"))
         return warnings
 
@@ -374,9 +416,11 @@ def _has_any_structured_constraint(spec: QuerySpec) -> bool:
             spec.start_time,
             spec.end_time,
             spec.brand,
+            spec.brands,
             spec.brand_origins,
             spec.color,
             spec.colors,
+            spec.condition_groups,
             spec.vehicle_type,
             spec.event,
             spec.events,
@@ -389,8 +433,14 @@ def _has_any_structured_constraint(spec: QuerySpec) -> bool:
             spec.wants_distinct_vehicle_count,
             spec.wants_event_breakdown,
             spec.wants_unclosed_entry_count,
+            spec.wants_presence_count,
+            spec.wants_tracking_duration,
             spec.vehicle_ordinal is not None,
             spec.wants_peak_hour,
+            spec.wants_hour_average,
+            spec.count_operator,
+            spec.count_threshold is not None,
+            spec.group_comparison,
             spec.wants_peak_camera,
             spec.wants_hour_breakdown,
             spec.wants_camera_breakdown,
@@ -511,7 +561,7 @@ def countable_vehicle_routes(records: list[CCTVRecord], spec: QuerySpec) -> list
     return [route for route in routes if _is_countable_vehicle_route(route)]
 
 
-def aggregate_records(records: list[CCTVRecord], group_by: str) -> dict:
+def aggregate_records(records: list[CCTVRecord], group_by: str, spec: QuerySpec | None = None) -> dict:
     buckets: dict[str, dict] = {}
     for record in records:
         key = _aggregation_key(record, group_by)
@@ -538,13 +588,18 @@ def aggregate_records(records: list[CCTVRecord], group_by: str) -> dict:
         for item in rows
     ]
     top_count = normalized_rows[0]["count"] if normalized_rows else 0
-    return {
+    aggregation = {
         "group_by": group_by,
         "total_count": len(records),
         "top_count": top_count,
         "top": [item for item in normalized_rows if item["count"] == top_count] if top_count else [],
         "rows": normalized_rows,
     }
+    if group_by == "hour" and spec and spec.wants_hour_average:
+        denominator = _hour_average_denominator(records, spec)
+        aggregation["average_count"] = (len(records) / denominator) if denominator else 0
+        aggregation["average_denominator"] = denominator
+    return aggregation
 
 
 def _aggregation_key(record: CCTVRecord, group_by: str) -> str:
@@ -559,6 +614,89 @@ def _aggregation_label(key: str, group_by: str) -> str:
     if group_by == "hour":
         return f"{key}:00-{key}:59"
     return key
+
+
+def _hour_average_denominator(records: list[CCTVRecord], spec: QuerySpec) -> int:
+    if spec.average_hours:
+        return spec.average_hours
+    days = {spec.date} if spec.date else {record.date for record in records}
+    day_count = max(1, len(days))
+    return day_count * _hour_slot_count(spec.start_seconds, spec.end_seconds)
+
+
+def _hour_slot_count(start_seconds: int | None, end_seconds: int | None) -> int:
+    if start_seconds is None or end_seconds is None:
+        return 24
+    start_hour = start_seconds // 3600
+    end_hour = end_seconds // 3600
+    if start_seconds <= end_seconds:
+        return end_hour - start_hour + 1
+    return (24 - start_hour) + end_hour + 1
+
+
+def aggregate_tracking_duration(records: list[CCTVRecord], routes: list[VehicleRoute], spec: QuerySpec) -> dict:
+    durations = [_record_duration_seconds(record) for record in records]
+    overlap_durations = [
+        _record_overlap_seconds(record, spec.start_seconds, spec.end_seconds)
+        for record in records
+    ]
+    max_record = max(records, key=_record_duration_seconds) if records else None
+    return {
+        "type": "tracking_duration",
+        "vehicle_count": len(routes),
+        "detection_count": len(records),
+        "average_duration_seconds": _average(durations),
+        "max_duration_seconds": max(durations, default=0),
+        "min_duration_seconds": min(durations, default=0),
+        "average_overlap_seconds": _average(overlap_durations),
+        "max_overlap_seconds": max(overlap_durations, default=0),
+        "has_time_range": spec.start_seconds is not None and spec.end_seconds is not None,
+        "presence_min_seconds": spec.presence_min_seconds,
+        "longest_detection": max_record.to_dict() if max_record else None,
+    }
+
+
+def _presence_filtered_records(records: list[CCTVRecord], spec: QuerySpec) -> list[CCTVRecord]:
+    min_seconds = spec.presence_min_seconds or 0
+    if min_seconds <= 0:
+        return records
+    return [
+        record
+        for record in records
+        if _presence_qualifying_seconds(record, spec.start_seconds, spec.end_seconds) >= min_seconds
+    ]
+
+
+def _presence_qualifying_seconds(record: CCTVRecord, start_seconds: int | None, end_seconds: int | None) -> int:
+    if start_seconds is not None and end_seconds is not None:
+        return _record_overlap_seconds(record, start_seconds, end_seconds)
+    return _record_duration_seconds(record)
+
+
+def _record_duration_seconds(record: CCTVRecord) -> int:
+    return max(0, (record.last_seen_seconds or record.timestamp_seconds) - record.timestamp_seconds)
+
+
+def _record_overlap_seconds(record: CCTVRecord, start_seconds: int | None, end_seconds: int | None) -> int:
+    duration = _record_duration_seconds(record)
+    if start_seconds is None or end_seconds is None:
+        return duration
+    record_start = record.timestamp_seconds
+    record_end = record.last_seen_seconds or record.timestamp_seconds
+    if start_seconds <= end_seconds:
+        return max(0, min(record_end, end_seconds) - max(record_start, start_seconds))
+    return max(
+        _interval_overlap_seconds(record_start, record_end, start_seconds, 23 * 3600 + 59 * 60 + 59),
+        _interval_overlap_seconds(record_start, record_end, 0, end_seconds),
+    )
+
+
+def _interval_overlap_seconds(left_start: int, left_end: int, right_start: int, right_end: int) -> int:
+    return max(0, min(left_end, right_end) - max(left_start, right_start))
+
+
+def _average(values: list[int]) -> float:
+    return (sum(values) / len(values)) if values else 0
 
 
 def routes_with_entry_without_exit(routes: list[VehicleRoute]) -> list[VehicleRoute]:
@@ -671,6 +809,12 @@ def format_aggregation_answer(spec: QuerySpec, aggregation: dict) -> str:
     return _format_english_aggregation_answer(spec, aggregation)
 
 
+def format_tracking_duration_answer(spec: QuerySpec, summary: QuerySummary, aggregation: dict) -> str:
+    if spec.language == "th":
+        return _format_thai_tracking_duration_answer(spec, summary, aggregation)
+    return _format_english_tracking_duration_answer(spec, summary, aggregation)
+
+
 def format_vehicle_ordinal_answer(spec: QuerySpec, route: VehicleRoute | None, total_routes: int) -> str:
     if spec.language == "th":
         return _format_thai_vehicle_ordinal_answer(spec, route, total_routes)
@@ -730,8 +874,6 @@ def _vehicle_ordinal_aggregation(spec: QuerySpec, route: VehicleRoute | None, to
 
 
 def _matches(record: CCTVRecord, spec: QuerySpec) -> bool:
-    if spec.date and record.date != spec.date:
-        return False
     if spec.cctv_id and record.cctv_id != spec.cctv_id:
         return False
     if spec.vehicle_type and record.vehicle_type.casefold() != spec.vehicle_type.casefold():
@@ -740,7 +882,13 @@ def _matches(record: CCTVRecord, spec: QuerySpec) -> bool:
         return False
     if spec.events and record.event.casefold() not in {event.casefold() for event in spec.events}:
         return False
-    if spec.brand and record.brand.casefold() != spec.brand.casefold():
+    if spec.condition_groups:
+        if not any(_record_matches_condition_group(record, group) for group in spec.condition_groups):
+            return False
+    elif spec.date and record.date != spec.date:
+        return False
+    query_brands = spec.brands or ((spec.brand,) if spec.brand else ())
+    if query_brands and not any(record.brand.casefold() == brand.casefold() for brand in query_brands):
         return False
     if spec.brand_origins and not brand_matches_any_origin(record.brand, spec.brand_origins):
         return False
@@ -749,14 +897,54 @@ def _matches(record: CCTVRecord, spec: QuerySpec) -> bool:
     if not spec.colors and spec.color and not _record_matches_color(record.color, spec.color):
         return False
     if spec.start_seconds is not None and spec.end_seconds is not None:
-        return _record_in_time_range(record.timestamp_seconds, spec.start_seconds, spec.end_seconds)
+        return _record_overlaps_time_range(record, spec.start_seconds, spec.end_seconds)
     return True
 
 
-def _record_in_time_range(timestamp_seconds: int, start_seconds: int, end_seconds: int) -> bool:
+def _record_matches_condition_group(record: CCTVRecord, group: dict) -> bool:
+    date = group.get("date")
+    if isinstance(date, str) and record.date != date:
+        return False
+
+    brands = _group_values(group, "brands")
+    if brands and not any(record.brand.casefold() == brand.casefold() for brand in brands):
+        return False
+
+    colors = _group_values(group, "colors")
+    if colors and not any(_record_matches_color(record.color, color) for color in colors):
+        return False
+
+    vehicle_type = group.get("vehicle_type")
+    if isinstance(vehicle_type, str) and record.vehicle_type.casefold() != vehicle_type.casefold():
+        return False
+
+    event = group.get("event")
+    if isinstance(event, str) and record.event.casefold() != event.casefold():
+        return False
+
+    start_seconds = group.get("start_seconds")
+    end_seconds = group.get("end_seconds")
+    if isinstance(start_seconds, int) and isinstance(end_seconds, int):
+        return _record_overlaps_time_range(record, start_seconds, end_seconds)
+
+    return True
+
+
+def _group_values(group: dict, key: str) -> tuple[str, ...]:
+    value = group.get(key)
+    if isinstance(value, str):
+        return (value,)
+    if isinstance(value, (list, tuple)):
+        return tuple(item for item in value if isinstance(item, str))
+    return ()
+
+
+def _record_overlaps_time_range(record: CCTVRecord, start_seconds: int, end_seconds: int) -> bool:
+    record_start = record.timestamp_seconds
+    record_end = record.last_seen_seconds or record.timestamp_seconds
     if start_seconds <= end_seconds:
-        return start_seconds <= timestamp_seconds <= end_seconds
-    return timestamp_seconds >= start_seconds or timestamp_seconds <= end_seconds
+        return record_start <= end_seconds and record_end >= start_seconds
+    return record_end >= start_seconds or record_start <= end_seconds
 
 
 def _record_matches_color(record_color: str, query_color: str) -> bool:
@@ -848,14 +1036,22 @@ def _format_thai_answer(spec: QuerySpec, summary: QuerySummary, routes: list[Veh
     context = _thai_context(spec)
     vehicle_label = THAI_TYPE_LABELS.get(spec.vehicle_type or "", "รถ")
     count = summary.unique_vehicle_count
+    group_comparison = group_comparison_aggregation(spec, summary)
+    if group_comparison:
+        return _format_thai_group_comparison_answer(spec, group_comparison, context)
     if spec.wants_unclosed_entry_count:
         if count == 0:
-            return f"ไม่พบรถที่ entry แล้วไม่ exit สำหรับ {context}"
+            lines = [f"ไม่พบรถที่ entry แล้วไม่ exit สำหรับ {context}"]
+            lines.extend(_thai_count_comparison_lines(spec, count))
+            return "\n".join(lines)
         lines = [f"พบรถที่ entry แล้วไม่ exit {count} คันสำหรับ {context}{_thai_count_note(spec, summary, routes)}"]
         lines.extend(_format_thai_cross_breakdowns(spec, summary))
+        lines.extend(_thai_count_comparison_lines(spec, count))
         return "\n".join(lines)
     if count == 0:
-        return f"ไม่พบข้อมูลที่ตรงกับเงื่อนไข: {context}"
+        lines = [f"ไม่พบข้อมูลที่ตรงกับเงื่อนไข: {context}"]
+        lines.extend(_thai_count_comparison_lines(spec, count))
+        return "\n".join(lines)
 
     count_label = " คันไม่ซ้ำ" if spec.wants_distinct_vehicle_count else " คัน"
     lines = [f"พบ {count}{count_label}สำหรับ {context}{_thai_count_note(spec, summary, routes)}"]
@@ -863,56 +1059,68 @@ def _format_thai_answer(spec: QuerySpec, summary: QuerySummary, routes: list[Veh
         lines[0] = f"พบ{vehicle_label} {count}{count_label}สำหรับ {context}{_thai_count_note(spec, summary, routes)}"
 
     if spec.wants_brand_color_breakdown and not spec.cross_breakdowns:
-        lines.append("ยี่ห้อ/สีที่พบ: " + _format_brand_color_items(summary, unit="คัน"))
+        lines.append("ยี่ห้อ/สีที่พบ: " + _format_brand_color_items(summary, unit="คัน", spec=spec))
     lines.extend(_format_thai_cross_breakdowns(spec, summary))
     if spec.wants_origin_breakdown:
         lines.append("\u0e2a\u0e23\u0e38\u0e1b\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28/\u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04: " + _format_origin_counts(spec, summary))
     if spec.wants_event_breakdown:
-        lines.append("สรุปตาม event: " + _format_named_counts_from_counter(summary.event_counts))
+        lines.append("สรุปตาม event: " + _format_named_counts_from_counter(summary.event_counts, spec=spec))
     if spec.wants_vehicle_list:
         lines.append("รายการรถไม่ซ้ำ:")
         lines.extend(_format_thai_vehicle_list(routes))
     if spec.wants_route:
         lines.append("ลำดับกล้องที่ผ่าน:")
         lines.extend(_format_thai_routes(routes))
+    lines.extend(_thai_count_comparison_lines(spec, count))
     return "\n".join(lines)
 
 
 def _format_english_answer(spec: QuerySpec, summary: QuerySummary, routes: list[VehicleRoute]) -> str:
     context = _english_context(spec)
     count = summary.unique_vehicle_count
+    group_comparison = group_comparison_aggregation(spec, summary)
+    if group_comparison:
+        return _format_english_group_comparison_answer(spec, group_comparison, context)
     if spec.wants_unclosed_entry_count:
         if count == 0:
-            return f"No vehicles with entry and no exit for {context}."
+            lines = [f"No vehicles with entry and no exit for {context}."]
+            lines.extend(_english_count_comparison_lines(spec, count))
+            return "\n".join(lines)
         lines = [f"Found {count} vehicles with entry and no exit for {context}{_english_count_note(spec, summary, routes)}."]
         lines.extend(_format_english_cross_breakdowns(spec, summary))
+        lines.extend(_english_count_comparison_lines(spec, count))
         return "\n".join(lines)
     if count == 0:
-        return f"No matching records for {context}."
+        lines = [f"No matching records for {context}."]
+        lines.extend(_english_count_comparison_lines(spec, count))
+        return "\n".join(lines)
 
     vehicle_word = _english_vehicle_word(spec.vehicle_type, count)
     lines = [f"Found {count} {vehicle_word} for {context}{_english_count_note(spec, summary, routes)}."]
     if spec.wants_brand_color_breakdown and not spec.cross_breakdowns:
-        lines.append("Brand/color breakdown: " + _format_brand_color_items(summary, unit=""))
+        lines.append("Brand/color breakdown: " + _format_brand_color_items(summary, unit="", spec=spec))
     lines.extend(_format_english_cross_breakdowns(spec, summary))
     if spec.wants_origin_breakdown:
         lines.append("Origin breakdown: " + _format_origin_counts(spec, summary))
     if spec.wants_event_breakdown:
-        lines.append("Event breakdown: " + _format_named_counts_from_counter(summary.event_counts))
+        lines.append("Event breakdown: " + _format_named_counts_from_counter(summary.event_counts, spec=spec))
     if spec.wants_vehicle_list:
         lines.append("Unique vehicles:")
         lines.extend(_format_english_vehicle_list(routes))
     if spec.wants_route:
         lines.append("Camera routes:")
         lines.extend(_format_english_routes(routes))
+    lines.extend(_english_count_comparison_lines(spec, count))
     return "\n".join(lines)
 
 
-def _format_brand_color_items(summary: QuerySummary, unit: str) -> str:
+def _format_brand_color_items(summary: QuerySummary, unit: str, spec: QuerySpec | None = None) -> str:
     sorted_items = sorted(
-        summary.brand_color_counts.items(),
+        _comparison_filtered_items(summary.brand_color_counts.items(), spec),
         key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
     )
+    if not sorted_items:
+        return "ไม่มี" if unit else "none"
     if unit:
         return ", ".join(f"{brand} {color} {count} {unit}" for (brand, color), count in sorted_items)
     return ", ".join(f"{brand} {color} {count}" for (brand, color), count in sorted_items)
@@ -926,6 +1134,108 @@ def _format_origin_brand_items(summary: QuerySummary, unit: str) -> str:
     if unit:
         return ", ".join(f"{origin} {brand} {count} {unit}" for (origin, brand), count in sorted_items)
     return ", ".join(f"{origin} {brand} {count}" for (origin, brand), count in sorted_items)
+
+
+def group_comparison_aggregation(spec: QuerySpec, summary: QuerySummary) -> dict | None:
+    comparison = spec.group_comparison or {}
+    if comparison.get("dimension") != "brand":
+        return None
+    left = comparison.get("left")
+    right = comparison.get("right")
+    if not isinstance(left, str) or not isinstance(right, str):
+        return None
+
+    left_count = summary.brand_counts.get(left, 0)
+    right_count = summary.brand_counts.get(right, 0)
+    difference = left_count - right_count
+    if difference > 0:
+        winner = left
+    elif difference < 0:
+        winner = right
+    else:
+        winner = None
+    return {
+        "type": "group_comparison",
+        "dimension": "brand",
+        "left": left,
+        "right": right,
+        "left_count": left_count,
+        "right_count": right_count,
+        "difference": difference,
+        "absolute_difference": abs(difference),
+        "winner": winner,
+    }
+
+
+def _format_thai_group_comparison_answer(spec: QuerySpec, aggregation: dict, context: str) -> str:
+    left = aggregation["left"]
+    right = aggregation["right"]
+    left_count = aggregation["left_count"]
+    right_count = aggregation["right_count"]
+    absolute_difference = aggregation["absolute_difference"]
+    if aggregation["winner"] is None:
+        return f"{left} และ {right} มีจำนวนเท่ากันสำหรับ {context}: {left_count} คันเท่ากัน"
+    if aggregation["winner"] == left:
+        return f"{left} เยอะกว่า {right} {absolute_difference} คันสำหรับ {context} ({left} {left_count} คัน, {right} {right_count} คัน)"
+    return f"{left} น้อยกว่า {right} {absolute_difference} คันสำหรับ {context} ({left} {left_count} คัน, {right} {right_count} คัน)"
+
+
+def _format_english_group_comparison_answer(spec: QuerySpec, aggregation: dict, context: str) -> str:
+    left = aggregation["left"]
+    right = aggregation["right"]
+    left_count = aggregation["left_count"]
+    right_count = aggregation["right_count"]
+    absolute_difference = aggregation["absolute_difference"]
+    if aggregation["winner"] is None:
+        return f"{left} and {right} are tied for {context}: {left_count} vehicles each."
+    if aggregation["winner"] == left:
+        return f"{left} has {absolute_difference} more vehicles than {right} for {context} ({left}: {left_count}, {right}: {right_count})."
+    return f"{left} has {absolute_difference} fewer vehicles than {right} for {context} ({left}: {left_count}, {right}: {right_count})."
+
+
+def _comparison_filtered_items(items, spec: QuerySpec | None):
+    if not spec or not spec.count_operator or spec.count_threshold is None:
+        return list(items)
+    return [(name, count) for name, count in items if _count_matches_comparison(count, spec)]
+
+
+def _count_matches_comparison(count: int, spec: QuerySpec) -> bool:
+    threshold = spec.count_threshold
+    if threshold is None:
+        return True
+    return {
+        "gt": count > threshold,
+        "gte": count >= threshold,
+        "lt": count < threshold,
+        "lte": count <= threshold,
+        "eq": count == threshold,
+    }.get(spec.count_operator or "", True)
+
+
+def _comparison_symbol(operator: str | None) -> str:
+    return {
+        "gt": ">",
+        "gte": ">=",
+        "lt": "<",
+        "lte": "<=",
+        "eq": "=",
+    }.get(operator or "", "")
+
+
+def _thai_count_comparison_lines(spec: QuerySpec, count: int) -> list[str]:
+    if not spec.count_operator or spec.count_threshold is None:
+        return []
+    symbol = _comparison_symbol(spec.count_operator)
+    verdict = "ใช่" if _count_matches_comparison(count, spec) else "ไม่ใช่"
+    return [f"ตรวจเงื่อนไขจำนวน: {count} {symbol} {spec.count_threshold} = {verdict}"]
+
+
+def _english_count_comparison_lines(spec: QuerySpec, count: int) -> list[str]:
+    if not spec.count_operator or spec.count_threshold is None:
+        return []
+    symbol = _comparison_symbol(spec.count_operator)
+    verdict = "yes" if _count_matches_comparison(count, spec) else "no"
+    return [f"Count comparison: {count} {symbol} {spec.count_threshold} = {verdict}"]
 
 
 THAI_CROSS_LABELS = {
@@ -957,7 +1267,7 @@ ENGLISH_CROSS_LABELS = {
 
 def _format_thai_cross_breakdowns(spec: QuerySpec, summary: QuerySummary) -> list[str]:
     return [
-        f"{THAI_CROSS_LABELS.get(name, name)}: {_format_cross_items(summary.cross_counts.get(name, Counter()), unit='คัน')}"
+        f"{THAI_CROSS_LABELS.get(name, name)}: {_format_cross_items(summary.cross_counts.get(name, Counter()), unit='คัน', spec=spec)}"
         for name in spec.cross_breakdowns
         if summary.cross_counts.get(name)
     ]
@@ -965,27 +1275,34 @@ def _format_thai_cross_breakdowns(spec: QuerySpec, summary: QuerySummary) -> lis
 
 def _format_english_cross_breakdowns(spec: QuerySpec, summary: QuerySummary) -> list[str]:
     return [
-        f"{ENGLISH_CROSS_LABELS.get(name, name)}: {_format_cross_items(summary.cross_counts.get(name, Counter()), unit='')}"
+        f"{ENGLISH_CROSS_LABELS.get(name, name)}: {_format_cross_items(summary.cross_counts.get(name, Counter()), unit='', spec=spec)}"
         for name in spec.cross_breakdowns
         if summary.cross_counts.get(name)
     ]
 
 
-def _format_cross_items(counter: Counter[tuple[str, str]], unit: str) -> str:
-    sorted_items = sorted(counter.items(), key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()))
+def _format_cross_items(counter: Counter[tuple[str, str]], unit: str, spec: QuerySpec | None = None) -> str:
+    sorted_items = sorted(
+        _comparison_filtered_items(counter.items(), spec),
+        key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
+    )
+    if not sorted_items:
+        return "ไม่มี" if unit else "none"
     if unit:
         return ", ".join(f"{left} {right} {count} {unit}" for (left, right), count in sorted_items)
     return ", ".join(f"{left} {right} {count}" for (left, right), count in sorted_items)
 
 
-def _format_named_counts_from_counter(counter: Counter[str]) -> str:
-    return ", ".join(f"{name}:{count}" for name, count in sorted(counter.items(), key=lambda item: item[0]))
+def _format_named_counts_from_counter(counter: Counter[str], spec: QuerySpec | None = None) -> str:
+    items = sorted(_comparison_filtered_items(counter.items(), spec), key=lambda item: item[0])
+    return ", ".join(f"{name}:{count}" for name, count in items) if items else "none"
 
 
 def _format_origin_counts(spec: QuerySpec, summary: QuerySummary) -> str:
     if spec.brand_origins:
-        return ", ".join(f"{origin}:{summary.origin_counts.get(origin, 0)}" for origin in spec.brand_origins)
-    return _format_named_counts_from_counter(summary.origin_counts)
+        items = [(origin, summary.origin_counts.get(origin, 0)) for origin in spec.brand_origins]
+        return ", ".join(f"{origin}:{count}" for origin, count in _comparison_filtered_items(items, spec)) or "none"
+    return _format_named_counts_from_counter(summary.origin_counts, spec=spec)
 
 
 def _should_offer_event_options(spec: QuerySpec) -> bool:
@@ -1041,6 +1358,104 @@ def _format_event_counts(counts: Counter[str]) -> str:
     return "[" + ", ".join(f"{event}:{count}" for event, count in items + extras) + "]"
 
 
+def _format_thai_tracking_duration_answer(spec: QuerySpec, summary: QuerySummary, aggregation: dict) -> str:
+    context = _thai_context(spec)
+    count = summary.unique_vehicle_count
+    minimum = _format_presence_minimum(spec, language="th")
+    if count == 0:
+        if spec.wants_presence_count:
+            return f"ไม่พบรถที่จอด/ค้างอยู่{minimum}สำหรับ {context}"
+        return f"ไม่พบรถที่มีช่วง tracking ทับกับเงื่อนไข: {context}"
+
+    detection_count = aggregation.get("detection_count", 0)
+    average = _format_duration(aggregation.get("average_duration_seconds", 0), language="th")
+    longest = _format_duration(aggregation.get("max_duration_seconds", 0), language="th")
+    overlap_average = _format_duration(aggregation.get("average_overlap_seconds", 0), language="th")
+    if spec.wants_presence_count:
+        lines = [
+            f"พบรถที่จอด/ค้างอยู่{minimum}ทับกับ {context} จำนวน {count} คัน "
+            f"(ตรวจพบ {detection_count} ครั้ง)"
+        ]
+    else:
+        lines = [
+            f"พบรถที่มีช่วง tracking ทับกับ {context} จำนวน {count} คัน "
+            f"(ตรวจพบ {detection_count} ครั้ง)"
+        ]
+    if aggregation.get("has_time_range"):
+        lines.append(f"เวลาอยู่ในช่วงที่ถามเฉลี่ย {overlap_average}")
+    if spec.wants_tracking_duration:
+        lines.append(f"ระยะ tracking เฉลี่ย {average}, นานสุด {longest}")
+    lines.append("หมายเหตุ: นับจาก First_Seen-Last_Seen ที่ทับช่วงเวลา ไม่ได้ยืนยันว่ารถจอดนิ่งจริง")
+    return "\n".join(lines)
+
+
+def _format_english_tracking_duration_answer(spec: QuerySpec, summary: QuerySummary, aggregation: dict) -> str:
+    context = _english_context(spec)
+    count = summary.unique_vehicle_count
+    minimum = _format_presence_minimum(spec, language="en")
+    if count == 0:
+        if spec.wants_presence_count:
+            return f"No vehicles parked/present{minimum} for {context}."
+        return f"No vehicles with tracking intervals overlapping {context}."
+
+    detection_count = aggregation.get("detection_count", 0)
+    average = _format_duration(aggregation.get("average_duration_seconds", 0), language="en")
+    longest = _format_duration(aggregation.get("max_duration_seconds", 0), language="en")
+    overlap_average = _format_duration(aggregation.get("average_overlap_seconds", 0), language="en")
+    if spec.wants_presence_count:
+        lines = [
+            f"Found {count} vehicles parked/present{minimum} overlapping {context} "
+            f"({detection_count} detections)."
+        ]
+    else:
+        lines = [
+            f"Found {count} vehicles with tracking intervals overlapping {context} "
+            f"({detection_count} detections)."
+        ]
+    if aggregation.get("has_time_range"):
+        lines.append(f"Average time inside the requested window: {overlap_average}.")
+    if spec.wants_tracking_duration:
+        lines.append(f"Average tracking duration: {average}; longest: {longest}.")
+    lines.append("Note: this uses First_Seen-Last_Seen overlap, not confirmed stationary parking.")
+    return "\n".join(lines)
+
+
+def _format_presence_minimum(spec: QuerySpec, *, language: str) -> str:
+    if not spec.wants_presence_count or not spec.presence_min_seconds:
+        return ""
+    duration = _format_presence_minimum_duration(spec.presence_min_seconds, language=language)
+    if language == "th":
+        return f"อย่างน้อย {duration}"
+    return f" for at least {duration}"
+
+
+def _format_presence_minimum_duration(seconds: int, *, language: str) -> str:
+    if seconds % 3600 == 0:
+        hours = seconds // 3600
+        return f"{hours}h" if language == "en" else f"{hours} ชม."
+    if seconds % 60 == 0:
+        minutes = seconds // 60
+        return f"{minutes}m" if language == "en" else f"{minutes} นาที"
+    return _format_duration(seconds, language=language)
+
+
+def _format_duration(seconds: float | int, *, language: str) -> str:
+    total_seconds = int(round(seconds))
+    minutes, second = divmod(total_seconds, 60)
+    hours, minute = divmod(minutes, 60)
+    if language == "en":
+        if hours:
+            return f"{hours}h {minute}m {second}s"
+        if minute:
+            return f"{minute}m {second}s"
+        return f"{second}s"
+    if hours:
+        return f"{hours} ชม. {minute} นาที {second} วินาที"
+    if minute:
+        return f"{minute} นาที {second} วินาที"
+    return f"{second} วินาที"
+
+
 def _format_thai_aggregation_answer(spec: QuerySpec, aggregation: dict) -> str:
     context = _thai_context(replace(spec, event=None, events=()))
     context_phrase = f"ใน{context}" if context == "ข้อมูลทั้งหมด" else f"สำหรับ {context}"
@@ -1051,6 +1466,10 @@ def _format_thai_aggregation_answer(spec: QuerySpec, aggregation: dict) -> str:
     top = aggregation["top"]
     top_text = ", ".join(f"{item['label']} ({item['count']} ครั้ง{_event_count_note(item)})" for item in top)
     if aggregation["group_by"] == "hour":
+        if spec.wants_hour_average:
+            average = aggregation.get("average_count", 0)
+            denominator = aggregation.get("average_denominator", 0)
+            return f"ค่าเฉลี่ยจำนวนรถต่อ 1 ชั่วโมง{context_phrase} คือ {average:.2f} ครั้ง/ชั่วโมง จาก {aggregation['total_count']} ครั้งใน {denominator} ชั่วโมง"
         if spec.wants_hour_breakdown and not spec.wants_peak_hour:
             return f"สรุปตามชั่วโมง{context_phrase}: {_format_aggregation_rows(aggregation)}"
         return f"ชั่วโมงที่มี{metric}มากที่สุด{context_phrase} คือ {top_text}"
@@ -1069,6 +1488,13 @@ def _format_english_aggregation_answer(spec: QuerySpec, aggregation: dict) -> st
     top = aggregation["top"]
     top_text = ", ".join(f"{item['label']} ({item['count']} records{_event_count_note(item)})" for item in top)
     if aggregation["group_by"] == "hour":
+        if spec.wants_hour_average:
+            average = aggregation.get("average_count", 0)
+            denominator = aggregation.get("average_denominator", 0)
+            return (
+                f"Average vehicles per 1 hour for {context}: {average:.2f} records/hour "
+                f"from {aggregation['total_count']} records across {denominator} hours."
+            )
         if spec.wants_hour_breakdown and not spec.wants_peak_hour:
             return f"Hourly breakdown for {context}: {_format_aggregation_rows(aggregation)}"
         return f"The busiest hour for {metric} in {context} is {top_text}."
@@ -1248,14 +1674,17 @@ def _english_count_note(spec: QuerySpec, summary: QuerySummary, routes: list[Veh
 
 def _thai_context(spec: QuerySpec) -> str:
     parts: list[str] = []
+    if spec.condition_groups:
+        parts.append("เงื่อนไขรวม " + " + ".join(_thai_condition_group_label(group) for group in spec.condition_groups))
     if spec.date:
         parts.append(f"วันที่ {spec.date}")
     if spec.cctv_id:
         parts.append(spec.cctv_id)
     if spec.start_time and spec.end_time:
         parts.append(f"ช่วง {spec.start_time}-{spec.end_time}")
-    if spec.brand:
-        parts.append(f"ยี่ห้อ {spec.brand}")
+    brands = spec.brands or ((spec.brand,) if spec.brand else ())
+    if brands:
+        parts.append(f"ยี่ห้อ {', '.join(brands)}")
     if spec.brand_origins:
         parts.append(f"\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28/\u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04 {', '.join(spec.brand_origins)}")
     colors = spec.colors or ((spec.color,) if spec.color else ())
@@ -1275,14 +1704,17 @@ def _thai_context(spec: QuerySpec) -> str:
 
 def _english_context(spec: QuerySpec) -> str:
     parts: list[str] = []
+    if spec.condition_groups:
+        parts.append("combined filters " + " + ".join(_english_condition_group_label(group) for group in spec.condition_groups))
     if spec.date:
         parts.append(f"date {spec.date}")
     if spec.cctv_id:
         parts.append(spec.cctv_id)
     if spec.start_time and spec.end_time:
         parts.append(f"from {spec.start_time} to {spec.end_time}")
-    if spec.brand:
-        parts.append(f"brand {spec.brand}")
+    brands = spec.brands or ((spec.brand,) if spec.brand else ())
+    if brands:
+        parts.append(f"brand {', '.join(brands)}")
     if spec.brand_origins:
         parts.append(f"origin {', '.join(spec.brand_origins)}")
     colors = spec.colors or ((spec.color,) if spec.color else ())
@@ -1298,6 +1730,54 @@ def _english_context(spec: QuerySpec) -> str:
     if spec.events:
         parts.append(f"events {', '.join(spec.events)}")
     return ", ".join(parts) if parts else "all records"
+
+
+def _thai_condition_group_label(group: dict) -> str:
+    parts: list[str] = []
+    date = group.get("date")
+    if isinstance(date, str):
+        parts.append(f"วันที่ {date}")
+    start_time = group.get("start_time")
+    end_time = group.get("end_time")
+    if isinstance(start_time, str) and isinstance(end_time, str):
+        parts.append(f"ช่วง {start_time}-{end_time}")
+    brands = _group_values(group, "brands")
+    if brands:
+        parts.append(f"ยี่ห้อ {', '.join(brands)}")
+    colors = _group_values(group, "colors")
+    if colors:
+        parts.append(f"สี {', '.join(colors)}")
+    vehicle_type = group.get("vehicle_type")
+    if isinstance(vehicle_type, str):
+        parts.append(f"ประเภท {THAI_TYPE_LABELS.get(vehicle_type, vehicle_type)}")
+    event = group.get("event")
+    if isinstance(event, str):
+        parts.append(f"event {event}")
+    return " ".join(parts)
+
+
+def _english_condition_group_label(group: dict) -> str:
+    parts: list[str] = []
+    date = group.get("date")
+    if isinstance(date, str):
+        parts.append(f"date {date}")
+    start_time = group.get("start_time")
+    end_time = group.get("end_time")
+    if isinstance(start_time, str) and isinstance(end_time, str):
+        parts.append(f"from {start_time} to {end_time}")
+    brands = _group_values(group, "brands")
+    if brands:
+        parts.append(f"brand {', '.join(brands)}")
+    colors = _group_values(group, "colors")
+    if colors:
+        parts.append(f"color {', '.join(colors)}")
+    vehicle_type = group.get("vehicle_type")
+    if isinstance(vehicle_type, str):
+        parts.append(f"type {vehicle_type}")
+    event = group.get("event")
+    if isinstance(event, str):
+        parts.append(f"event {event}")
+    return " ".join(parts)
 
 
 def _english_vehicle_word(vehicle_type: str | None, count: int) -> str:

@@ -33,12 +33,12 @@ select {
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-  gap: 28px;
-  width: min(1440px, 100%);
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  width: 100%;
   min-height: 100vh;
-  margin: 0 auto;
-  padding: 24px;
+  margin: 0;
+  padding: 16px;
 }
 
 .query-pane,
@@ -48,7 +48,7 @@ select {
 
 .query-pane {
   border-right: 1px solid var(--line);
-  padding-right: 28px;
+  padding-right: 20px;
 }
 
 .brand-row {
@@ -98,6 +98,9 @@ label,
 }
 
 textarea,
+.data-source-row select,
+.summary-scope select,
+.summary-scope input,
 .filter-grid select,
 .filter-grid input,
 .csv-form input[type="file"],
@@ -124,6 +127,10 @@ textarea {
 }
 
 textarea:focus,
+.data-source-row select:focus,
+.summary-scope select:focus,
+.summary-scope input:focus,
+.summary-row-scope-control:focus,
 .csv-toolbar select:focus,
 .sql-toolbar select:focus,
 .modal-dialog select:focus {
@@ -152,6 +159,45 @@ textarea:focus,
   width: 15px;
   height: 15px;
   accent-color: var(--accent);
+}
+
+.data-source-panel {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 13px 0 14px;
+  margin-bottom: 18px;
+}
+
+.data-source-panel .section-title {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.data-source-panel .section-title h2 {
+  display: block;
+  margin: 0;
+  font-size: 14px;
+}
+
+.data-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.data-source-row select {
+  min-height: 36px;
+  padding: 7px 9px;
+  font-size: 13px;
+}
+
+.data-source-meta {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 button {
@@ -423,7 +469,7 @@ button.compact {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
-  min-height: 460px;
+  min-height: calc(100vh - 168px);
   overflow: hidden;
 }
 
@@ -468,6 +514,8 @@ button.compact {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   border-bottom: 1px solid var(--line);
   padding: 10px 12px;
 }
@@ -475,6 +523,160 @@ button.compact {
 .summary-heading h2 {
   margin: 0;
   font-size: 14px;
+}
+
+.summary-scope {
+  display: grid;
+  grid-template-columns: minmax(118px, 1fr) minmax(102px, 1fr) 110px 110px;
+  gap: 6px;
+  align-items: center;
+  flex: 1 1 440px;
+}
+
+.summary-scope select,
+.summary-scope input {
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.summary-filter {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) auto auto;
+  align-items: start;
+  gap: 8px;
+  min-width: min(100%, 520px);
+}
+
+.summary-filter-label {
+  margin: 0;
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.summary-filter-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 96px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.summary-filter-choices[aria-disabled="true"] {
+  background: var(--soft);
+}
+
+.summary-filter-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  min-height: 28px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--ink);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.summary-filter-choice:has(input:checked) {
+  border-color: var(--accent);
+  background: #e8f3ef;
+  color: var(--accent-strong);
+}
+
+.summary-filter-choice input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.summary-filter-choice span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-filter-choice strong {
+  color: var(--accent-strong);
+}
+
+.summary-compare-output {
+  border-bottom: 1px solid var(--line);
+  background: #f3f8f6;
+  color: var(--accent-strong);
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.summary-row-scope-cell {
+  min-width: 116px;
+}
+
+.summary-row-scope-control {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 5px 7px;
+  font-size: 12px;
+}
+
+.summary-row-scope-time {
+  min-width: 104px;
+}
+
+.summary-row-button {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.summary-row-result {
+  min-width: 150px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.summary-row-result.error {
+  color: var(--danger);
+}
+
+.summary-row-compare-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.summary-row-compare-choice input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 pre {
@@ -489,7 +691,7 @@ pre {
 
 .table-wrap {
   overflow: auto;
-  max-height: 620px;
+  max-height: calc(100vh - 310px);
 }
 
 table {
@@ -687,6 +889,11 @@ code {
   .summary-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .summary-scope,
+  .summary-filter {
+    flex-basis: 100%;
+  }
 }
 
 @media (max-width: 620px) {
@@ -702,6 +909,8 @@ code {
 
   .metric-strip,
   .summary-overview,
+  .summary-scope,
+  .summary-filter,
   .csv-toolbar,
   .sql-toolbar {
     grid-template-columns: 1fr;

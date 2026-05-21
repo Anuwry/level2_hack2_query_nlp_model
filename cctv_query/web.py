@@ -10,6 +10,7 @@ from typing import Callable
 from urllib.parse import urlparse
 
 from cctv_query.batch import answer_batch_questions, format_csv_style_answer, parse_batch_question_csv, render_answers_csv
+from cctv_query.csv_store import load_records
 from cctv_query.engine import CCTVQueryEngine
 from cctv_query.llm_normalizer import (
     DEFAULT_LLM_BASE_URL,
@@ -68,7 +69,70 @@ def handle_metadata_payload(engine: CCTVQueryEngine) -> dict:
     return {
         "dates": list(engine.known_dates),
         "cctv_ids": list(engine.known_cctv_ids),
+        "colors": list(engine.known_colors),
     }
+
+
+def handle_csv_files_payload(current_csv_path: Path) -> dict:
+    current_path = current_csv_path.resolve()
+    return {
+        "active_csv": _project_relative_path(current_path),
+        "files": list_project_csv_files(current_path),
+    }
+
+
+def list_project_csv_files(current_csv_path: Path | None = None) -> list[dict]:
+    current_path = current_csv_path.resolve() if current_csv_path else None
+    files: list[dict] = []
+    for path in sorted(PROJECT_ROOT.rglob("*.csv"), key=lambda item: _project_relative_path(item.resolve()).casefold()):
+        if _is_hidden_project_path(path):
+            continue
+        resolved = path.resolve()
+        item = {
+            "path": _project_relative_path(resolved),
+            "absolute_path": str(resolved),
+            "size_bytes": resolved.stat().st_size,
+            "active": resolved == current_path,
+        }
+        try:
+            records = load_records(resolved)
+        except Exception as exc:
+            item.update({"loadable": False, "row_count": 0, "error": str(exc)})
+        else:
+            item.update({"loadable": True, "row_count": len(records), "error": ""})
+        files.append(item)
+    return files
+
+
+def resolve_project_csv_path(value: str) -> Path:
+    if not value.strip():
+        raise ValueError("CSV path is required.")
+    raw_path = Path(value.strip()).expanduser()
+    candidate = raw_path if raw_path.is_absolute() else PROJECT_ROOT / raw_path
+    resolved = candidate.resolve()
+    project_root = PROJECT_ROOT.resolve()
+    if resolved != project_root and project_root not in resolved.parents:
+        raise ValueError("CSV path must be inside this project folder.")
+    if resolved.suffix.casefold() != ".csv":
+        raise ValueError("Selected file must be a .csv file.")
+    if not resolved.exists() or not resolved.is_file():
+        raise ValueError(f"CSV file not found: {_project_relative_path(resolved)}")
+    return resolved
+
+
+def _project_relative_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(PROJECT_ROOT.resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _is_hidden_project_path(path: Path) -> bool:
+    try:
+        relative_parts = path.resolve().relative_to(PROJECT_ROOT.resolve()).parts
+    except ValueError:
+        return True
+    return any(part.startswith(".") for part in relative_parts)
 
 
 def handle_batch_query_payload(engine: CCTVQueryEngine, payload: dict) -> dict:
@@ -126,8 +190,18 @@ def _looks_like_multi_question_csv(text: str) -> bool:
 class CCTVWebServer(ThreadingHTTPServer):
     def __init__(self, server_address, handler_class, csv_path: Path):
         super().__init__(server_address, handler_class)
+        self.csv_path = resolve_project_csv_path(str(csv_path))
+        self.engine = CCTVQueryEngine.from_csv(self.csv_path)
+
+    def select_csv(self, csv_path: Path) -> dict:
+        engine = CCTVQueryEngine.from_csv(csv_path)
         self.csv_path = csv_path
-        self.engine = CCTVQueryEngine.from_csv(csv_path)
+        self.engine = engine
+        return {
+            "ok": True,
+            "active_csv": _project_relative_path(csv_path),
+            "metadata": handle_metadata_payload(engine),
+        }
 
 
 class CCTVRequestHandler(BaseHTTPRequestHandler):
@@ -153,6 +227,9 @@ class CCTVRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/metadata":
             self._send_json(handle_metadata_payload(self.server.engine))
             return
+        if path == "/api/csv-files":
+            self._send_json(handle_csv_files_payload(self.server.csv_path))
+            return
         if path == "/api/sql-sample":
             self._send_json(
                 {
@@ -168,13 +245,15 @@ class CCTVRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path not in {"/api/query", "/api/batch-query", "/api/sql-to-csv"}:
+        if path not in {"/api/query", "/api/batch-query", "/api/sql-to-csv", "/api/select-csv"}:
             self._send_error(HTTPStatus.NOT_FOUND, "Not found")
             return
 
         try:
             payload = self._read_json_body()
-            if path == "/api/sql-to-csv":
+            if path == "/api/select-csv":
+                response = self.server.select_csv(resolve_project_csv_path(str(payload.get("path", ""))))
+            elif path == "/api/sql-to-csv":
                 response = handle_sql_to_csv_payload(payload)
             elif path == "/api/batch-query":
                 response = handle_batch_query_payload(self.server.engine, payload)

@@ -188,6 +188,13 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(options["Dark Green"]["count"], 1)
         self.assertEqual(options["Metallic Green"]["count"], 1)
 
+    def test_unknown_explicit_color_returns_out_of_range(self):
+        result = self.engine.ask("มีรถสีรุ้งกี่คัน")
+
+        self.assertTrue(result.out_of_range)
+        self.assertEqual(result.out_of_range_reasons, ("color",))
+        self.assertEqual(result.answer, "Question Out Of Range")
+
     def test_route_answer_lists_camera_sequence_for_selected_vehicle(self):
         result = self.engine.ask("วันที่ 12 รถ Toyota ช่วง 22:00-23:00 เดินทางไปทางไหนบ้าง")
 
@@ -381,6 +388,104 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(result.summary.brand_counts["Toyota"], 1)
         self.assertEqual(result.summary.brand_counts["Honda"], 1)
 
+    def test_multiple_brand_filter_counts_combined_or(self):
+        result = self.engine.ask("Honda และ Toyota รวมกันได้กี่คัน")
+
+        self.assertEqual(result.spec.brands, ("Honda", "Toyota"))
+        self.assertEqual(result.count, 8)
+        self.assertEqual(result.summary.brand_counts["Honda"], 4)
+        self.assertEqual(result.summary.brand_counts["Toyota"], 4)
+        self.assertIn("ยี่ห้อ Honda, Toyota", result.answer)
+
+    def test_multiple_date_brand_color_groups_count_combined_or(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "08:10:00", "Honda", "White", "Car"),
+                CCTVRecord.from_values("14-05-2026", "CCTV01", "08:20:00", "Honda", "White", "Car"),
+                CCTVRecord.from_values("14-05-2026", "CCTV01", "08:30:00", "Toyota", "Red", "Car"),
+            ]
+        )
+
+        result = engine.ask("วันที่ 13 Toyota สีแดง และ วันที่ 14 honda สีขาว รวมกันได้เท่าไหร่")
+
+        self.assertEqual(result.count, 2)
+        self.assertEqual(result.summary.brand_counts["Toyota"], 1)
+        self.assertEqual(result.summary.brand_counts["Honda"], 1)
+        self.assertEqual(result.summary.color_counts["Red"], 1)
+        self.assertEqual(result.summary.color_counts["White"], 1)
+        self.assertIn("เงื่อนไขรวม", result.answer)
+
+    def test_multiple_time_brand_color_groups_count_combined_or(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "12:10:00", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "12:20:00", "Honda", "White", "Car"),
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "16:10:00", "Toyota", "White", "Car"),
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "16:20:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("14-05-2026", "CCTV01", "12:10:00", "Honda", "Red", "Car"),
+            ]
+        )
+
+        result = engine.ask(
+            "วันที่ 13 ช่วง 12:00:00-13:00:00 honda สีแดง และ ช่วง 16:00:00 - 17:00:00 toyota สีขาว รวมกันได้กี่คัน"
+        )
+
+        self.assertEqual(result.count, 2)
+        self.assertEqual(result.summary.brand_counts["Honda"], 1)
+        self.assertEqual(result.summary.brand_counts["Toyota"], 1)
+        self.assertEqual(result.summary.color_counts["Red"], 1)
+        self.assertEqual(result.summary.color_counts["White"], 1)
+        self.assertIn("ช่วง 12:00:00-13:00:00 ยี่ห้อ Honda สี Red", result.answer)
+        self.assertIn("ช่วง 16:00:00-17:00:00 ยี่ห้อ Toyota สี White", result.answer)
+
+    def test_count_comparison_answers_yes_or_no(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Toyota", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "BMW", "Black", "Car"),
+            ]
+        )
+
+        greater = engine.ask("วันที่ 12 มีรถมากกว่า 2 คันไหม")
+        less = engine.ask("วันที่ 12 มีรถน้อยกว่า 2 คันไหม")
+
+        self.assertEqual(greater.count, 3)
+        self.assertIn("3 > 2 = ใช่", greater.answer)
+        self.assertIn("3 < 2 = ไม่ใช่", less.answer)
+
+    def test_count_comparison_filters_breakdown_items(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "BMW", "White", "Car"),
+            ]
+        )
+
+        result = engine.ask("วันที่ 12 ยี่ห้อและสี มากกว่า 1 คัน")
+
+        self.assertIn("Honda Red 2 คัน", result.answer)
+        self.assertNotIn("BMW White 1 คัน", result.answer)
+
+    def test_brand_group_comparison_reports_difference(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "Toyota", "Black", "Car"),
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "08:00:00", "Toyota", "Black", "Car"),
+            ]
+        )
+
+        result = engine.ask("วันที่ 12 Honda เยอะกว่า Toyota เท่าไหร่")
+
+        self.assertEqual(result.spec.group_comparison, {"dimension": "brand", "left": "Honda", "right": "Toyota"})
+        self.assertEqual(result.aggregation["difference"], 1)
+        self.assertIn("Honda เยอะกว่า Toyota 1 คัน", result.answer)
+        self.assertIn("Honda 2 คัน, Toyota 1 คัน", result.answer)
+
     def test_bare_entry_event_filter_counts_entry_events(self):
         engine = CCTVQueryEngine(make_event_records())
 
@@ -437,6 +542,77 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(result.count, 3)
         self.assertIn("08:00-08:59", result.answer)
         self.assertNotIn("No time range specified", result.warnings)
+
+    def test_hour_average_question_returns_average_per_hour(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:05:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:10:00", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:05:00", "Mazda", "White", "Car"),
+            ]
+        )
+
+        result = engine.ask("วันที่ 12 ค่าเฉลี่ยจำนวนรถในแต่ละ 1 ชั่วโมง")
+
+        self.assertTrue(result.spec.wants_hour_average)
+        self.assertEqual(result.aggregation["average_denominator"], 24)
+        self.assertAlmostEqual(result.aggregation["average_count"], 3 / 24)
+        self.assertIn("0.12", result.answer)
+
+    def test_hour_average_can_use_explicit_one_day_denominator_without_date(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:05:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("13-05-2026", "CCTV01", "08:10:00", "Honda", "Blue", "Car"),
+            ]
+        )
+
+        result = engine.ask("ค่าเฉลี่ยจำนวนรถจากแค่ 1 วัน 24 ชั่วโมง")
+
+        self.assertEqual(result.spec.average_hours, 24)
+        self.assertEqual(result.aggregation["average_denominator"], 24)
+        self.assertAlmostEqual(result.aggregation["average_count"], 2 / 24)
+
+    def test_electric_vehicle_question_is_not_treated_as_blue(self):
+        result = self.engine.ask("รถไฟฟ้ามีกี่คัน")
+
+        self.assertTrue(result.out_of_range)
+        self.assertEqual(result.out_of_range_reasons, ("fuel_type",))
+        self.assertIsNone(result.spec.color)
+
+    def test_presence_question_requires_ten_minute_overlap(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", last_seen="08:15:00"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:06:00", "Honda", "Blue", "Car", last_seen="08:08:00"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:11:00", "Mazda", "White", "Car", last_seen="08:20:00"),
+            ]
+        )
+
+        result = engine.ask("วันที่ 12 cctv01 ช่วงเวลา 08:00:00-08:20:00 มีรถจอดอยู่กี่คัน")
+
+        self.assertTrue(result.spec.wants_presence_count)
+        self.assertEqual(result.spec.presence_min_seconds, 600)
+        self.assertEqual(result.count, 1)
+        self.assertEqual(result.event_count, 1)
+        self.assertEqual(result.aggregation["detection_count"], 1)
+        self.assertEqual(result.aggregation["presence_min_seconds"], 600)
+        self.assertIn("อย่างน้อย 10 นาที", result.answer)
+
+    def test_tracking_duration_question_returns_duration_summary(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", last_seen="08:00:30"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:02:00", "Honda", "Blue", "Car", last_seen="08:03:00"),
+            ]
+        )
+
+        result = engine.ask("วันที่ 12 cctv01 tracking duration นานเท่าไหร่")
+
+        self.assertTrue(result.spec.wants_tracking_duration)
+        self.assertEqual(result.aggregation["average_duration_seconds"], 45)
+        self.assertEqual(result.aggregation["max_duration_seconds"], 60)
+        self.assertIn("ระยะ tracking เฉลี่ย", result.answer)
 
     def test_peak_camera_question_groups_entry_exit_by_camera(self):
         engine = CCTVQueryEngine(

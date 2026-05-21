@@ -18,6 +18,10 @@ CSV_EVENT_TEXT = """Date,CCTV_ID,Timestamp,Brand,Color,Type,Event
 12-05-2026,CCTV01,08:00:00,Toyota,Red,Car,entry
 """
 
+CSV_TRACK_TEXT = """Date,CCTV_ID,First_Seen,Last_Seen,Brand,Color,Type,Event
+12-05-2026,CCTV01,08:00:00,08:00:24,Toyota,Red,Car,entry
+"""
+
 
 class CsvStoreAndCliTests(unittest.TestCase):
     def test_cli_default_csv_uses_routed_log(self):
@@ -33,6 +37,7 @@ class CsvStoreAndCliTests(unittest.TestCase):
         self.assertEqual(len(records), 3)
         self.assertEqual(records[0].cctv_id, "CCTV04")
         self.assertEqual(records[0].timestamp, "01:06:00")
+        self.assertEqual(records[0].last_seen, "01:06:00")
 
     def test_load_records_reads_optional_event_columns(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -42,6 +47,16 @@ class CsvStoreAndCliTests(unittest.TestCase):
             records = load_records(path)
 
         self.assertEqual(records[0].event, "entry")
+
+    def test_load_records_reads_first_and_last_seen_columns(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "logs.csv"
+            path.write_text(CSV_TRACK_TEXT, encoding="utf-8")
+
+            records = load_records(path)
+
+        self.assertEqual(records[0].timestamp, "08:00:00")
+        self.assertEqual(records[0].last_seen, "08:00:24")
 
     def test_load_records_rejects_missing_required_columns(self):
         with tempfile.TemporaryDirectory() as tmpdir:

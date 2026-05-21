@@ -129,6 +129,8 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
     if result.out_of_range:
         return result.answer
 
+    if result.spec.group_comparison:
+        return _format_group_comparison(result.aggregation or {})
     if result.spec.vehicle_ordinal is not None:
         return _format_vehicle_ordinal(result)
     if result.spec.wants_unclosed_entry_count and result.spec.cross_breakdowns:
@@ -152,23 +154,28 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
     if mode == "brand_color":
         return _format_brand_color_counts(result)
     if mode == "brand":
-        return _format_named_counts(result.summary.brand_counts.items())
+        return _format_named_counts(result.summary.brand_counts.items(), result)
     if mode == "color":
-        return _format_named_counts(result.summary.color_counts.items())
+        return _format_named_counts(result.summary.color_counts.items(), result)
     if mode == "origin":
         if result.spec.brand_origins:
-            return _format_named_counts((origin, result.summary.origin_counts.get(origin, 0)) for origin in result.spec.brand_origins)
-        return _format_named_counts(result.summary.origin_counts.items())
+            return _format_named_counts(
+                ((origin, result.summary.origin_counts.get(origin, 0)) for origin in result.spec.brand_origins),
+                result,
+            )
+        return _format_named_counts(result.summary.origin_counts.items(), result)
     if mode == "type":
-        return _format_named_counts(result.summary.type_counts.items())
+        return _format_named_counts(result.summary.type_counts.items(), result)
     if mode == "event":
         return _format_event_counts(Counter(record.event for record in result.matches))
+    if result.spec.count_operator and result.spec.count_threshold is not None:
+        return _format_count_comparison(result.count, result.spec.count_operator, result.spec.count_threshold)
     return str(result.count)
 
 
 def _format_brand_color_counts(result: QueryResult) -> str:
     items = sorted(
-        result.summary.brand_color_counts.items(),
+        _comparison_filtered_items(result.summary.brand_color_counts.items(), result),
         key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
     )
     return "[" + ", ".join(f"({brand}, {color}):{count}" for (brand, color), count in items) + "]"
@@ -176,14 +183,14 @@ def _format_brand_color_counts(result: QueryResult) -> str:
 
 def _format_cross_counts(result: QueryResult, mode: str) -> str:
     items = sorted(
-        result.summary.cross_counts.get(mode, Counter()).items(),
+        _comparison_filtered_items(result.summary.cross_counts.get(mode, Counter()).items(), result),
         key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
     )
     return "[" + ", ".join(f"({left}, {right}):{count}" for (left, right), count in items) + "]"
 
 
-def _format_named_counts(items) -> str:
-    sorted_items = sorted(items, key=lambda item: (-item[1], str(item[0]).casefold()))
+def _format_named_counts(items, result: QueryResult | None = None) -> str:
+    sorted_items = sorted(_comparison_filtered_items(items, result), key=lambda item: (-item[1], str(item[0]).casefold()))
     return "[" + ", ".join(f"{name}:{count}" for name, count in sorted_items) + "]"
 
 
@@ -191,6 +198,45 @@ def _format_event_counts(counts: Counter[str]) -> str:
     items = [(event, counts[event]) for event in ("entry", "exit", "pass") if counts[event]]
     extras = sorted((event, count) for event, count in counts.items() if event not in {"entry", "exit", "pass"})
     return "[" + ", ".join(f"{event}:{count}" for event, count in items + extras) + "]"
+
+
+def _comparison_filtered_items(items, result: QueryResult | None):
+    if not result or not result.spec.count_operator or result.spec.count_threshold is None:
+        return list(items)
+    return [(name, count) for name, count in items if _count_matches(count, result.spec.count_operator, result.spec.count_threshold)]
+
+
+def _count_matches(count: int, operator: str, threshold: int) -> bool:
+    return {
+        "gt": count > threshold,
+        "gte": count >= threshold,
+        "lt": count < threshold,
+        "lte": count <= threshold,
+        "eq": count == threshold,
+    }.get(operator, True)
+
+
+def _format_count_comparison(count: int, operator: str, threshold: int) -> str:
+    symbol = {
+        "gt": ">",
+        "gte": ">=",
+        "lt": "<",
+        "lte": "<=",
+        "eq": "=",
+    }.get(operator, operator)
+    verdict = "true" if _count_matches(count, operator, threshold) else "false"
+    return f"{verdict} ({count} {symbol} {threshold})"
+
+
+def _format_group_comparison(aggregation: dict) -> str:
+    if aggregation.get("type") != "group_comparison":
+        return "[]"
+    left = aggregation.get("left", "")
+    right = aggregation.get("right", "")
+    left_count = aggregation.get("left_count", 0)
+    right_count = aggregation.get("right_count", 0)
+    difference = aggregation.get("difference", 0)
+    return f"[{left}:{left_count}, {right}:{right_count}, difference:{difference}]"
 
 
 def _format_vehicle_ordinal(result: QueryResult) -> str:

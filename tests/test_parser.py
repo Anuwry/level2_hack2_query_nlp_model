@@ -51,7 +51,73 @@ class ParseQuestionTests(unittest.TestCase):
         )
 
         self.assertEqual(spec.brand, "Toyota")
+        self.assertEqual(spec.brands, ("Toyota",))
         self.assertEqual(spec.vehicle_type, "Car")
+
+    def test_parse_multiple_brands_as_or_filter(self):
+        spec = parse_question(
+            "Honda และ Toyota รวมกันได้กี่คัน",
+            known_brands=["Toyota", "Honda", "Mazda"],
+        )
+
+        self.assertEqual(spec.brand, "Honda")
+        self.assertEqual(spec.brands, ("Honda", "Toyota"))
+
+    def test_parse_multiple_date_brand_color_groups_as_or_filter(self):
+        spec = parse_question(
+            "วันที่ 13 Toyota สีแดง และ วันที่ 14 honda สีขาว รวมกันได้เท่าไหร่",
+            known_brands=["Toyota", "Honda", "Mazda"],
+            known_colors=["Red", "White", "Blue"],
+            known_dates=["13-05-2026", "14-05-2026"],
+        )
+
+        self.assertIsNone(spec.date)
+        self.assertIsNone(spec.brand)
+        self.assertEqual(spec.brands, ())
+        self.assertIsNone(spec.color)
+        self.assertEqual(spec.colors, ())
+        self.assertEqual(
+            spec.condition_groups,
+            (
+                {"date": "13-05-2026", "brands": ("Toyota",), "colors": ("Red",)},
+                {"date": "14-05-2026", "brands": ("Honda",), "colors": ("White",)},
+            ),
+        )
+
+    def test_parse_multiple_time_brand_color_groups_inherit_single_date(self):
+        spec = parse_question(
+            "วันที่ 13 ช่วง 12:00:00-13:00:00 honda สีแดง และ ช่วง 16:00:00 - 17:00:00 toyota สีขาว รวมกันได้กี่คัน",
+            known_brands=["Toyota", "Honda", "Mazda"],
+            known_colors=["Red", "White", "Blue"],
+            known_dates=["13-05-2026"],
+        )
+
+        self.assertIsNone(spec.date)
+        self.assertIsNone(spec.start_time)
+        self.assertIsNone(spec.end_time)
+        self.assertEqual(
+            spec.condition_groups,
+            (
+                {
+                    "start_time": "12:00:00",
+                    "end_time": "13:00:00",
+                    "start_seconds": 43200,
+                    "end_seconds": 46800,
+                    "date": "13-05-2026",
+                    "brands": ("Honda",),
+                    "colors": ("Red",),
+                },
+                {
+                    "start_time": "16:00:00",
+                    "end_time": "17:00:00",
+                    "start_seconds": 57600,
+                    "end_seconds": 61200,
+                    "date": "13-05-2026",
+                    "brands": ("Toyota",),
+                    "colors": ("White",),
+                },
+            ),
+        )
 
     def test_parse_day_only_date_from_known_dates(self):
         spec = parse_question(
@@ -191,6 +257,12 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertEqual(spec.color, "Bronze")
         self.assertTrue(spec.wants_metallic_color)
 
+    def test_parse_unknown_explicit_color_as_out_of_range(self):
+        spec = parse_question("มีรถสีรุ้งกี่คัน", known_colors=["Red", "White", "Black"])
+
+        self.assertEqual(spec.colors, ())
+        self.assertEqual(spec.out_of_range_fields, ("color",))
+
     def test_parse_brand_origin_filter_terms(self):
         japanese = parse_question("\u0e23\u0e16\u0e0d\u0e35\u0e48\u0e1b\u0e38\u0e48\u0e19\u0e01\u0e35\u0e48\u0e04\u0e31\u0e19")
         european = parse_question("how many european cars")
@@ -264,6 +336,82 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertEqual(spec.cctv_id, "CCTV01")
         self.assertTrue(spec.wants_peak_hour)
         self.assertEqual(spec.events, ("entry", "exit"))
+
+    def test_parse_thai_hour_average_question(self):
+        spec = parse_question("ค่าเฉลี่ยจำนวนรถในแต่ละ 1 ชั่วโมง")
+
+        self.assertTrue(spec.wants_hour_average)
+        self.assertFalse(spec.wants_peak_hour)
+        self.assertIsNone(spec.average_hours)
+
+    def test_parse_hour_average_denominator_from_day_and_hour_text(self):
+        spec = parse_question("ค่าเฉลี่ยจำนวนรถจากแค่ 1 วัน 24 ชั่วโมง")
+
+        self.assertTrue(spec.wants_hour_average)
+        self.assertEqual(spec.average_hours, 24)
+
+    def test_parse_count_comparison_operators(self):
+        greater = parse_question("วันที่ 12 มีรถมากกว่า 10 คันไหม", known_dates=["12-05-2026"])
+        less_equal = parse_question("cars <= 5")
+        at_least = parse_question("รถอย่างน้อย 3 คัน")
+
+        self.assertEqual(greater.count_operator, "gt")
+        self.assertEqual(greater.count_threshold, 10)
+        self.assertEqual(less_equal.count_operator, "lte")
+        self.assertEqual(less_equal.count_threshold, 5)
+        self.assertEqual(at_least.count_operator, "gte")
+        self.assertEqual(at_least.count_threshold, 3)
+
+    def test_parse_brand_group_comparison(self):
+        spec = parse_question(
+            "วันที่ 12 Honda เยอะกว่า Toyota เท่าไหร่",
+            known_brands=["Honda", "Toyota", "Mazda"],
+            known_dates=["12-05-2026"],
+        )
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.brands, ("Honda", "Toyota"))
+        self.assertEqual(spec.group_comparison, {"dimension": "brand", "left": "Honda", "right": "Toyota"})
+
+    def test_parse_extended_color_aliases(self):
+        cases = {
+            "รถสีฟ้า": "Blue",
+            "รถสีน้ำเงิน": "Navy Blue",
+            "รถสีฟ้า-ขาว": "Blue-White",
+            "รถสีบรอนซ์ทอง": "Bronze Gold",
+            "รถสีบรอนซ์เทา": "Bronze Gray",
+            "รถสีบรอนซ์เงิน": "Bronze Silver",
+            "รถสีเทาเข้ม": "Charcoal",
+            "รถสีเหลืองเขียว": "Chartreuse",
+            "รถสีเขียวเข้ม": "Dark Green",
+            "รถสีเขียวอู่อน": "Light Green",
+            "รถสีเขียวเมทาลิค": "Metallic Green",
+            "รถสีเขียวขี้ม้า": "Olive Green",
+            "รถสีเทาฟ้า": "Slate Blue",
+            "รถสีเหลือง-เขียว": "Yellow-Green",
+        }
+
+        for question, color in cases.items():
+            with self.subTest(question=question):
+                spec = parse_question(question)
+                self.assertEqual(spec.color, color)
+
+    def test_parse_electric_vehicle_does_not_match_blue_color(self):
+        spec = parse_question("รถไฟฟ้ามีกี่คัน", known_colors=["Blue", "White", "Black"])
+
+        self.assertIsNone(spec.color)
+        self.assertEqual(spec.colors, ())
+        self.assertEqual(spec.out_of_range_fields, ("fuel_type",))
+
+    def test_parse_tracking_presence_and_duration_questions(self):
+        presence = parse_question("ช่วงเวลา 08:00-08:10 มีรถจอดอยู่กี่คัน")
+        duration = parse_question("tracking duration รถค้างนานเท่าไหร่")
+
+        self.assertEqual(presence.start_time, "08:00:00")
+        self.assertEqual(presence.end_time, "08:10:00")
+        self.assertTrue(presence.wants_presence_count)
+        self.assertEqual(presence.presence_min_seconds, 600)
+        self.assertTrue(duration.wants_tracking_duration)
 
     def test_parse_thai_peak_camera_entry_exit_question(self):
         spec = parse_question(

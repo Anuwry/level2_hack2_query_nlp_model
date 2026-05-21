@@ -17,26 +17,86 @@ DATE_TOKEN = (
     r"|\d{4}\s+\d{1,2}\s+\d{1,2}"
     r")\b"
 )
+DAY_ONLY_DATE_PATTERNS: tuple[str, ...] = (
+    r"ประจำ(?:วัน)?ที่\s*(\d{1,2})(?!\s*[-/]\s*\d)",
+    r"วันที\s*(\d{1,2})(?!\s*[-/]\s*\d)",
+    r"วันที่\s*(\d{1,2})(?!\s*[-/]\s*\d)",
+    r"\b(?:date|day|on date|on day)\s*[:#]?\s*(\d{1,2})(?:st|nd|rd|th)?\b",
+    r"\bon\s+(\d{1,2})(?:st|nd|rd|th)?\b",
+)
 
 TYPE_ALIASES: tuple[tuple[str, str], ...] = (
     ("motorcycles", "Motorcycle"),
     ("motorcycle", "Motorcycle"),
+    ("motor scooters", "Motorcycle"),
+    ("motor scooter", "Motorcycle"),
     ("motorbikes", "Motorcycle"),
     ("motorbike", "Motorcycle"),
+    ("scooters", "Motorcycle"),
+    ("scooter", "Motorcycle"),
+    ("big bikes", "Motorcycle"),
+    ("big bike", "Motorcycle"),
+    ("bikes", "Motorcycle"),
+    ("bike", "Motorcycle"),
     ("มอเตอร์ไซค์", "Motorcycle"),
     ("มอเตอร์ไซต์", "Motorcycle"),
     ("จักรยานยนต์", "Motorcycle"),
     ("รถจักรยานยนต์", "Motorcycle"),
+    ("จยย", "Motorcycle"),
+    ("สกู๊ตเตอร์", "Motorcycle"),
+    ("สกูตเตอร์", "Motorcycle"),
+    ("บิ๊กไบค์", "Motorcycle"),
+    ("bigbike", "Motorcycle"),
+    ("big bike", "Motorcycle"),
+    ("trailers", "Truck"),
+    ("trailer", "Truck"),
+    ("semi trucks", "Truck"),
+    ("semi truck", "Truck"),
+    ("pickup trucks", "Truck"),
+    ("pickup truck", "Truck"),
+    ("pickups", "Truck"),
+    ("pickup", "Truck"),
     ("trucks", "Truck"),
     ("truck", "Truck"),
     ("lorries", "Truck"),
     ("lorry", "Truck"),
+    ("cargo vehicles", "Truck"),
+    ("cargo vehicle", "Truck"),
+    ("goods vehicles", "Truck"),
+    ("goods vehicle", "Truck"),
     ("รถบรรทุก", "Truck"),
+    ("รถกระบะ", "Truck"),
+    ("กระบะ", "Truck"),
+    ("รถหกล้อ", "Truck"),
     ("รถสิบล้อ", "Truck"),
+    ("รถพ่วง", "Truck"),
+    ("รถขนส่ง", "Truck"),
+    ("รถขนของ", "Truck"),
+    ("รถสินค้า", "Truck"),
+    ("coaches", "Bus"),
+    ("coach", "Bus"),
+    ("minibuses", "Bus"),
+    ("minibus", "Bus"),
+    ("public buses", "Bus"),
+    ("public bus", "Bus"),
     ("buses", "Bus"),
     ("bus", "Bus"),
     ("รถบัส", "Bus"),
     ("รถเมล์", "Bus"),
+    ("รถโดยสาร", "Bus"),
+    ("รถประจำทาง", "Bus"),
+    ("รถทัวร์", "Bus"),
+    ("รถตู้โดยสาร", "Bus"),
+    ("sedans", "Car"),
+    ("sedan", "Car"),
+    ("saloons", "Car"),
+    ("saloon", "Car"),
+    ("passenger vehicles", "Car"),
+    ("passenger vehicle", "Car"),
+    ("passenger cars", "Car"),
+    ("passenger car", "Car"),
+    ("automobiles", "Car"),
+    ("automobile", "Car"),
     ("cars", "Car"),
     ("car", "Car"),
     ("private vehicles", "Car"),
@@ -45,6 +105,9 @@ TYPE_ALIASES: tuple[tuple[str, str], ...] = (
     ("private car", "Car"),
     ("รถยนต์ส่วนบุคคล", "Car"),
     ("รถส่วนบุคคล", "Car"),
+    ("รถส่วนตัว", "Car"),
+    ("รถยนต์นั่ง", "Car"),
+    ("รถนั่งส่วนบุคคล", "Car"),
     ("ส่วนบุคคล", "Car"),
     ("รถยนต์", "Car"),
     ("รถเก๋ง", "Car"),
@@ -52,19 +115,96 @@ TYPE_ALIASES: tuple[tuple[str, str], ...] = (
 )
 
 COLOR_ALIASES: tuple[tuple[str, str], ...] = (
+    ("ฟ้า-ขาว", "Blue-White"),
+    ("ฟ้าขาว", "Blue-White"),
+    ("สีฟ้า-ขาว", "Blue-White"),
+    ("สีฟ้าขาว", "Blue-White"),
+    ("blue-white", "Blue-White"),
+    ("blue white", "Blue-White"),
+    ("บรอนซ์ทอง", "Bronze Gold"),
+    ("สีบรอนซ์ทอง", "Bronze Gold"),
+    ("bronze gold", "Bronze Gold"),
+    ("bronze-gold", "Bronze Gold"),
+    ("บรอนซ์เทา", "Bronze Gray"),
+    ("สีบรอนซ์เทา", "Bronze Gray"),
+    ("bronze gray", "Bronze Gray"),
+    ("bronze grey", "Bronze Gray"),
+    ("bronze-gray", "Bronze Gray"),
+    ("bronze-grey", "Bronze Gray"),
+    ("บรอนซ์เงิน", "Bronze Silver"),
+    ("สีบรอนซ์เงิน", "Bronze Silver"),
+    ("bronze silver", "Bronze Silver"),
+    ("bronze-silver", "Bronze Silver"),
+    ("เทาเข้ม", "Charcoal"),
+    ("สีเทาเข้ม", "Charcoal"),
+    ("charcoal gray", "Charcoal"),
+    ("charcoal grey", "Charcoal"),
+    ("charcoal", "Charcoal"),
+    ("เหลืองเขียว", "Chartreuse"),
+    ("สีเหลืองเขียว", "Chartreuse"),
+    ("chartreuse", "Chartreuse"),
+    ("เขียวเข้ม", "Dark Green"),
+    ("สีเขียวเข้ม", "Dark Green"),
+    ("dark green", "Dark Green"),
+    ("เขียวอ่อน", "Light Green"),
+    ("เขียวอู่อน", "Light Green"),
+    ("สีเขียวอ่อน", "Light Green"),
+    ("สีเขียวอู่อน", "Light Green"),
+    ("light green", "Light Green"),
+    ("เขียวเมทาลิค", "Metallic Green"),
+    ("สีเขียวเมทาลิค", "Metallic Green"),
+    ("เขียวเมทัลลิค", "Metallic Green"),
+    ("สีเขียวเมทัลลิค", "Metallic Green"),
+    ("metallic green", "Metallic Green"),
+    ("น้ำเงิน", "Navy Blue"),
+    ("สีน้ำเงิน", "Navy Blue"),
+    ("navy blue", "Navy Blue"),
+    ("navy", "Navy Blue"),
+    ("เขียวขี้ม้า", "Olive Green"),
+    ("สีเขียวขี้ม้า", "Olive Green"),
+    ("olive green", "Olive Green"),
+    ("olive", "Olive Green"),
+    ("แดง-ขาว", "Red-White"),
+    ("แดงขาว", "Red-White"),
+    ("สีแดง-ขาว", "Red-White"),
+    ("สีแดงขาว", "Red-White"),
+    ("red-white", "Red-White"),
+    ("red white", "Red-White"),
+    ("เทาฟ้า", "Slate Blue"),
+    ("สีเทาฟ้า", "Slate Blue"),
+    ("slate blue", "Slate Blue"),
+    ("slate-blue", "Slate Blue"),
+    ("เหลือง-เขียว", "Yellow-Green"),
+    ("สีเหลือง-เขียว", "Yellow-Green"),
+    ("yellow-green", "Yellow-Green"),
+    ("yellow green", "Yellow-Green"),
     ("สีแดง", "Red"),
+    ("แดงสด", "Red"),
+    ("แดงเข้ม", "Red"),
     ("แดง", "Red"),
+    ("dark red", "Red"),
+    ("light red", "Red"),
     ("red", "Red"),
     ("สีขาว", "White"),
+    ("ขาวมุก", "White"),
+    ("ขาวครีม", "White"),
     ("ขาว", "White"),
+    ("off white", "White"),
+    ("cream white", "White"),
     ("white", "White"),
     ("สีดำ", "Black"),
+    ("ดำด้าน", "Black"),
+    ("ดำเงา", "Black"),
     ("ดำ", "Black"),
+    ("matte black", "Black"),
+    ("jet black", "Black"),
     ("black", "Black"),
     ("สีฟ้า", "Blue"),
-    ("สีน้ำเงิน", "Blue"),
-    ("ฟ้า", "Blue"),
-    ("น้ำเงิน", "Blue"),
+    ("ฟ้าอ่อน", "Blue"),
+    ("น้ำเงินเข้ม", "Navy Blue"),
+    ("กรมท่า", "Navy Blue"),
+    ("light blue", "Blue"),
+    ("dark blue", "Navy Blue"),
     ("blue", "Blue"),
     ("สีเขียว", "Green"),
     ("เขียว", "Green"),
@@ -73,7 +213,10 @@ COLOR_ALIASES: tuple[tuple[str, str], ...] = (
     ("เหลือง", "Yellow"),
     ("yellow", "Yellow"),
     ("สีเทา", "Gray"),
+    ("สีเทาอ่อน", "Gray"),
     ("เทา", "Gray"),
+    ("light grey", "Gray"),
+    ("light gray", "Gray"),
     ("grey", "Gray"),
     ("gray", "Gray"),
     ("สีเงิน", "Silver"),
@@ -94,11 +237,14 @@ COLOR_ALIASES: tuple[tuple[str, str], ...] = (
     ("สีทอง", "Gold"),
     ("ทอง", "Gold"),
     ("gold", "Gold"),
+    ("champagne", "Gold"),
     ("สีบรอนซ์", "Bronze"),
     ("บรอนซ์", "Bronze"),
     ("bronze", "Bronze"),
     ("สีเลือดหมู", "Maroon"),
+    ("แดงเลือดหมู", "Maroon"),
     ("เลือดหมู", "Maroon"),
+    ("burgundy", "Maroon"),
     ("maroon", "Maroon"),
 )
 
@@ -106,30 +252,52 @@ VEHICLE_TYPE_WORDS = {"car", "cars", "bus", "buses", "truck", "trucks", "motorcy
 
 _BRAND_ORIGIN_ALIASES: tuple[tuple[str, str], ...] = (
     ("japanese", "Japanese"),
+    ("japan", "Japanese"),
+    ("made in japan", "Japanese"),
+    ("\u0e0d\u0e1b", "Japanese"),
     ("\u0e0d\u0e35\u0e48\u0e1b\u0e38\u0e48\u0e19", "Japanese"),
     ("chinese", "Chinese"),
     ("china", "Chinese"),
+    ("made in china", "Chinese"),
+    ("\u0e08\u0e35\u0e19\u0e41\u0e14\u0e07", "Chinese"),
     ("\u0e08\u0e35\u0e19", "Chinese"),
     ("south korean", "Korean"),
+    ("south korea", "Korean"),
     ("korean", "Korean"),
+    ("korea", "Korean"),
+    ("\u0e40\u0e01\u0e32\u0e2b\u0e25\u0e35\u0e43\u0e15\u0e49", "Korean"),
     ("\u0e40\u0e01\u0e32\u0e2b\u0e25\u0e35", "Korean"),
     ("european", "European"),
     ("europe", "European"),
+    ("eu", "European"),
+    ("\u0e22\u0e38\u0e42\u0e23\u0e1b\u0e35\u0e22\u0e19", "European"),
     ("\u0e22\u0e38\u0e42\u0e23\u0e1b", "European"),
     ("german", "German"),
+    ("germany", "German"),
+    ("\u0e40\u0e22\u0e2d\u0e23\u0e21\u0e31\u0e19\u0e35", "German"),
     ("\u0e40\u0e22\u0e2d\u0e23\u0e21\u0e31\u0e19", "German"),
+    ("usa", "American"),
+    ("u.s.a", "American"),
+    ("united states", "American"),
+    ("us", "American"),
     ("american", "American"),
     ("america", "American"),
     ("\u0e2d\u0e40\u0e21\u0e23\u0e34\u0e01\u0e32", "American"),
     ("\u0e2d\u0e40\u0e21\u0e23\u0e34\u0e01\u0e31\u0e19", "American"),
     ("french", "French"),
     ("france", "French"),
+    ("\u0e1d\u0e23\u0e31\u0e48\u0e07\u0e40\u0e28\u0e28", "French"),
     ("\u0e1d\u0e23\u0e31\u0e48\u0e07\u0e40\u0e28\u0e2a", "French"),
     ("malaysian", "Malaysian"),
     ("malaysia", "Malaysian"),
+    ("\u0e21\u0e32\u0e40\u0e25\u0e22\u0e4c", "Malaysian"),
     ("\u0e21\u0e32\u0e40\u0e25\u0e40\u0e0b\u0e35\u0e22", "Malaysian"),
     ("british", "British / UK origin"),
+    ("britain", "British / UK origin"),
+    ("england", "British / UK origin"),
+    ("english", "British / UK origin"),
     ("uk origin", "British / UK origin"),
+    ("u.k.", "British / UK origin"),
     ("uk", "British / UK origin"),
     ("\u0e2d\u0e31\u0e07\u0e01\u0e24\u0e29", "British / UK origin"),
 )
@@ -153,11 +321,32 @@ def parse_question(
         vehicle_type = None
     colors = _extract_colors(text, known_colors)
     color = colors[0] if colors else None
-    brand = _extract_brand(text, known_brands)
+    unknown_color = _extract_unknown_color_text(text, known_colors) if not colors else None
+    unsupported_electric_vehicle = _mentions_electric_vehicle(text)
+    brands = _extract_brands(text, known_brands)
+    brand = brands[0] if brands else None
+    condition_groups = _extract_condition_groups(text, known_brands, known_colors, known_dates)
+    if condition_groups:
+        date = None
+        start_time = None
+        end_time = None
+        start_seconds = None
+        end_seconds = None
+        brand = None
+        brands = ()
+        color = None
+        colors = ()
     brand_origins = _extract_brand_origins(text)
     wants_event_breakdown = _wants_event_breakdown(text)
     wants_unclosed_entry_count = _wants_unclosed_entry_count(text)
+    wants_presence_count = _wants_presence_count(text)
+    presence_min_seconds = _extract_presence_min_seconds(text) if wants_presence_count else None
+    wants_tracking_duration = _wants_tracking_duration(text)
     wants_peak_hour = _wants_peak_hour(text)
+    wants_hour_average = _wants_hour_average(text)
+    average_hours = _extract_average_hours(text) if wants_hour_average else None
+    count_operator, count_threshold = _extract_count_comparison(text)
+    group_comparison = _extract_group_comparison(text, brands)
     wants_peak_camera = _wants_peak_camera(text) and cctv_id is None
     wants_hour_breakdown = _wants_hour_breakdown(text)
     wants_camera_breakdown = _wants_camera_breakdown(text) and cctv_id is None
@@ -165,6 +354,11 @@ def parse_question(
     events = _extract_event_scope(text) if (wants_peak_hour or wants_peak_camera or wants_hour_breakdown or wants_camera_breakdown) else ()
     if events:
         event = None
+    if condition_groups and any(group.get("event") for group in condition_groups):
+        event = None
+        events = ()
+    if condition_groups and any(group.get("vehicle_type") for group in condition_groups):
+        vehicle_type = None
     wants_brand_color_breakdown = _wants_brand_color_breakdown(text)
     wants_origin_breakdown = _wants_origin_breakdown(text)
     wants_origin_brand_breakdown = _wants_origin_brand_breakdown(text)
@@ -182,7 +376,15 @@ def parse_question(
     if vehicle_ordinal is not None:
         wants_vehicle_list = True
         wants_distinct_vehicle_count = True
-    out_of_range_fields = ("date",) if date_out_of_range else ()
+    out_of_range_fields = tuple(
+        field
+        for field, enabled in (
+            ("date", date_out_of_range),
+            ("color", bool(unknown_color)),
+            ("fuel_type", unsupported_electric_vehicle),
+        )
+        if enabled
+    )
 
     return QuerySpec(
         raw_question=question,
@@ -194,9 +396,11 @@ def parse_question(
         start_seconds=start_seconds,
         end_seconds=end_seconds,
         brand=brand,
+        brands=brands,
         brand_origins=brand_origins,
         color=color,
         colors=colors,
+        condition_groups=condition_groups,
         vehicle_type=vehicle_type,
         event=event,
         events=events,
@@ -209,8 +413,16 @@ def parse_question(
         wants_distinct_vehicle_count=wants_distinct_vehicle_count,
         wants_event_breakdown=wants_event_breakdown,
         wants_unclosed_entry_count=wants_unclosed_entry_count,
+        wants_presence_count=wants_presence_count,
+        presence_min_seconds=presence_min_seconds,
+        wants_tracking_duration=wants_tracking_duration,
         vehicle_ordinal=vehicle_ordinal,
         wants_peak_hour=wants_peak_hour,
+        wants_hour_average=wants_hour_average,
+        average_hours=average_hours,
+        count_operator=count_operator,
+        count_threshold=count_threshold,
+        group_comparison=group_comparison,
         wants_peak_camera=wants_peak_camera,
         wants_hour_breakdown=wants_hour_breakdown,
         wants_camera_breakdown=wants_camera_breakdown,
@@ -238,18 +450,198 @@ def _extract_date(text: str, known_dates: Iterable[str] | None = None) -> tuple[
 
 
 def _extract_day_only_date(text: str) -> int | None:
-    patterns = (
-        r"วันที่\s*(\d{1,2})(?!\s*[-/]\s*\d)",
-        r"\b(?:date|day)\s+(\d{1,2})(?:st|nd|rd|th)?\b",
-        r"\bon\s+(\d{1,2})(?:st|nd|rd|th)?\b",
-    )
-    for pattern in patterns:
+    for pattern in DAY_ONLY_DATE_PATTERNS:
         match = re.search(pattern, text, flags=re.IGNORECASE)
         if match:
             day = int(match.group(1))
             if 1 <= day <= 31:
                 return day
     return None
+
+
+def _extract_condition_groups(
+    text: str,
+    known_brands: Iterable[str] | None,
+    known_colors: Iterable[str] | None,
+    known_dates: Iterable[str] | None,
+) -> tuple[dict[str, object], ...]:
+    mentions = _date_mentions(text, known_dates)
+    time_mentions = _time_range_mentions(text)
+
+    if len(mentions) < 2 and len(time_mentions) < 2:
+        return ()
+
+    if len(time_mentions) >= 2:
+        groups = _condition_groups_from_time_ranges(text, mentions, time_mentions, known_brands, known_colors)
+        if groups:
+            return groups
+
+    groups: list[dict[str, object]] = []
+    for index, mention in enumerate(mentions):
+        segment_end = mentions[index + 1]["start"] if index + 1 < len(mentions) else len(text)
+        segment = text[int(mention["start"]) : int(segment_end)]
+        group: dict[str, object] = {"date": mention["date"]}
+
+        brands = _extract_brands(segment, known_brands)
+        if brands:
+            group["brands"] = brands
+
+        colors = _extract_colors(segment, known_colors)
+        if colors:
+            group["colors"] = colors
+
+        start_time, end_time = _extract_time_range(segment)
+        if start_time and end_time:
+            group["start_time"] = start_time
+            group["end_time"] = end_time
+            group["start_seconds"] = time_to_seconds(start_time)
+            group["end_seconds"] = time_to_seconds(end_time)
+
+        vehicle_type = _extract_alias(segment, TYPE_ALIASES)
+        if vehicle_type and not (vehicle_type == "Car" and _plain_thai_vehicle_word_is_generic(segment)):
+            group["vehicle_type"] = vehicle_type
+
+        event = _extract_event(segment)
+        if event:
+            group["event"] = event
+
+        groups.append(group)
+
+    return tuple(groups)
+
+
+def _condition_groups_from_time_ranges(
+    text: str,
+    date_mentions: list[dict[str, object]],
+    time_mentions: list[dict[str, object]],
+    known_brands: Iterable[str] | None,
+    known_colors: Iterable[str] | None,
+) -> tuple[dict[str, object], ...]:
+    group_starts = _time_group_starts(text, date_mentions, time_mentions)
+    groups: list[dict[str, object]] = []
+    for index, mention in enumerate(time_mentions):
+        segment_end = group_starts[index + 1] if index + 1 < len(group_starts) else len(text)
+        segment = text[group_starts[index] : segment_end]
+        group: dict[str, object] = {
+            "start_time": mention["start_time"],
+            "end_time": mention["end_time"],
+            "start_seconds": mention["start_seconds"],
+            "end_seconds": mention["end_seconds"],
+        }
+
+        date = _nearest_preceding_date(mention, date_mentions) or _single_date(date_mentions)
+        if date:
+            group["date"] = date
+
+        brands = _extract_brands(segment, known_brands)
+        if brands:
+            group["brands"] = brands
+
+        colors = _extract_colors(segment, known_colors)
+        if colors:
+            group["colors"] = colors
+
+        vehicle_type = _extract_alias(segment, TYPE_ALIASES)
+        if vehicle_type and not (vehicle_type == "Car" and _plain_thai_vehicle_word_is_generic(segment)):
+            group["vehicle_type"] = vehicle_type
+
+        event = _extract_event(segment)
+        if event:
+            group["event"] = event
+
+        groups.append(group)
+    return tuple(groups)
+
+
+def _time_range_mentions(text: str) -> list[dict[str, object]]:
+    matches = list(re.finditer(TIME_TOKEN, text))
+    mentions: list[dict[str, object]] = []
+    for index in range(0, len(matches) - 1, 2):
+        start_time = _normalize_loose_time(matches[index].group(0))
+        end_time = _normalize_loose_time(matches[index + 1].group(0))
+        mentions.append(
+            {
+                "start": matches[index].start(),
+                "end": matches[index + 1].end(),
+                "start_time": start_time,
+                "end_time": end_time,
+                "start_seconds": time_to_seconds(start_time),
+                "end_seconds": time_to_seconds(end_time),
+            }
+        )
+    return mentions
+
+
+def _time_group_starts(
+    text: str,
+    date_mentions: list[dict[str, object]],
+    time_mentions: list[dict[str, object]],
+) -> list[int]:
+    starts: list[int] = []
+    for index, mention in enumerate(time_mentions):
+        base_start = _time_group_base_start(mention, date_mentions, time_mentions[index - 1] if index else None)
+        between = text[base_start : int(mention["start"])]
+        connector = _last_group_connector(between)
+        starts.append(base_start + connector.end() if connector else base_start)
+    return starts
+
+
+def _time_group_base_start(
+    mention: dict[str, object],
+    date_mentions: list[dict[str, object]],
+    previous_time_mention: dict[str, object] | None,
+) -> int:
+    if previous_time_mention:
+        return int(previous_time_mention["end"])
+
+    preceding_dates = [date for date in date_mentions if int(date["end"]) <= int(mention["start"])]
+    if preceding_dates:
+        return int(preceding_dates[-1]["end"])
+    return 0
+
+
+def _last_group_connector(text: str) -> re.Match[str] | None:
+    matches = list(re.finditer(r"(?:\b(?:and|or|plus)\b|และ|หรือ|,|;|\+)", text, flags=re.IGNORECASE))
+    return matches[-1] if matches else None
+
+
+def _nearest_preceding_date(mention: dict[str, object], date_mentions: list[dict[str, object]]) -> str | None:
+    preceding_dates = [date for date in date_mentions if int(date["start"]) <= int(mention["start"])]
+    if not preceding_dates:
+        return None
+    date = preceding_dates[-1].get("date")
+    return date if isinstance(date, str) else None
+
+
+def _single_date(date_mentions: list[dict[str, object]]) -> str | None:
+    dates = {date.get("date") for date in date_mentions if isinstance(date.get("date"), str)}
+    return next(iter(dates)) if len(dates) == 1 else None
+
+
+def _date_mentions(text: str, known_dates: Iterable[str] | None) -> list[dict[str, object]]:
+    mentions: list[dict[str, object]] = []
+    occupied: list[tuple[int, int]] = []
+
+    for match in re.finditer(DATE_TOKEN, text, flags=re.IGNORECASE):
+        date = normalize_date(_clean_date_text(match.group(0)))
+        mentions.append({"start": match.start(), "end": match.end(), "date": date})
+        occupied.append((match.start(), match.end()))
+
+    for pattern in DAY_ONLY_DATE_PATTERNS:
+        for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+            start, end = match.span()
+            if any(not (end <= used_start or start >= used_end) for used_start, used_end in occupied):
+                continue
+            day = int(match.group(1))
+            if not (1 <= day <= 31):
+                continue
+            date = _resolve_day_from_known_dates(day, known_dates)
+            if not date:
+                continue
+            mentions.append({"start": start, "end": end, "date": date})
+            occupied.append((start, end))
+
+    return sorted(mentions, key=lambda item: (int(item["start"]), int(item["end"])))
 
 
 def _clean_date_text(text: str) -> str:
@@ -283,8 +675,16 @@ def _extract_cctv_id(text: str) -> str | None:
     if direct:
         return normalize_cctv_id(direct.group(1))
 
+    english_camera = re.search(
+        r"\b(?:camera|cam|cctv camera|cctv cam)\s*(?:no\.?|number|#|id)?\s*0*(\d{1,2})\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if english_camera:
+        return normalize_cctv_id(english_camera.group(1))
+
     thai_camera = re.search(
-        r"กล้อง\s*(?:(?:หมายเลข|ตัวที่|ตัว|ที่)\s*)?0*(\d{1,2})\b",
+        r"(?:กล้อง|กล้องวงจรปิด|ซีซีทีวี)\s*(?:(?:หมายเลข|เลข|เบอร์|ตัวที่|ตัว|ที่|id)\s*)?0*(\d{1,2})\b",
         text,
         flags=re.IGNORECASE,
     )
@@ -357,6 +757,54 @@ def _extract_colors(text: str, known_colors: Iterable[str] | None) -> tuple[str,
     return tuple(colors)
 
 
+def _extract_unknown_color_text(text: str, known_colors: Iterable[str] | None) -> str | None:
+    normalized_text = text.casefold()
+    if _mentions_metallic_group(text):
+        return None
+
+    skip_terms = {
+        "\u0e2d\u0e30\u0e44\u0e23",
+        "\u0e2d\u0e30\u0e44\u0e23\u0e1a\u0e49\u0e32\u0e07",
+        "\u0e44\u0e2b\u0e19",
+        "\u0e43\u0e14",
+        "\u0e01\u0e35\u0e48",
+        "\u0e41\u0e25\u0e30",
+        "\u0e17\u0e35\u0e48",
+        "\u0e15\u0e32\u0e21",
+        "what",
+        "which",
+        "by",
+        "and",
+        "มากกว่า",
+        "น้อยกว่า",
+        "ต่ำกว่า",
+        "เกิน",
+        "ไม่เกิน",
+        "ไม่ถึง",
+        "อย่างน้อย",
+        "more",
+        "less",
+        "fewer",
+        "over",
+        "under",
+    }
+    for match in re.finditer(r"(?:\u0e2a\u0e35|color|colour)\s*([A-Za-z\u0E00-\u0E7F][A-Za-z\u0E00-\u0E7F\-]*)", normalized_text):
+        candidate = match.group(1).strip()
+        if candidate in skip_terms:
+            continue
+        if _candidate_is_known_color(candidate, known_colors):
+            continue
+        return candidate
+    return None
+
+
+def _candidate_is_known_color(candidate: str, known_colors: Iterable[str] | None) -> bool:
+    candidate_folded = candidate.casefold()
+    if any(candidate_folded == alias.casefold() for alias, _ in COLOR_ALIASES):
+        return True
+    return any(candidate_folded == color.casefold() for color in known_colors or ())
+
+
 def _mentions_metallic_group(text: str) -> bool:
     normalized_text = text.casefold()
     return any(term in normalized_text for term in ("metallic", "\u0e40\u0e21\u0e17\u0e31\u0e25\u0e25\u0e34\u0e01"))
@@ -364,6 +812,25 @@ def _mentions_metallic_group(text: str) -> bool:
 
 def _is_metallic_color_group(text: str, colors: tuple[str, ...]) -> bool:
     return colors == METALLIC_COLORS and _mentions_metallic_group(text)
+
+
+def _mentions_electric_vehicle(text: str) -> bool:
+    normalized_text = text.casefold()
+    return (
+        any(
+            term in normalized_text
+            for term in (
+                "รถไฟฟ้า",
+                "รถยนต์ไฟฟ้า",
+                "ยานยนต์ไฟฟ้า",
+                "electric vehicle",
+                "electric vehicles",
+                "electric car",
+                "electric cars",
+            )
+        )
+        or bool(re.search(r"(?<![a-z0-9])evs?(?![a-z0-9])", normalized_text))
+    )
 
 
 def _extract_brand_origins(text: str) -> tuple[str, ...]:
@@ -399,16 +866,22 @@ def _extract_known_phrases(text: str, known_values: Iterable[str] | None) -> lis
     return [value for _, _, value in sorted(matches, key=lambda item: item[0])]
 
 
-def _extract_brand(text: str, known_brands: Iterable[str] | None) -> str | None:
+def _extract_brands(text: str, known_brands: Iterable[str] | None) -> tuple[str, ...]:
     brands = [
         brand
         for brand in (known_brands or [])
         if brand.strip() and brand.strip().casefold() not in VEHICLE_TYPE_WORDS
     ]
-    exact_match = _extract_known_phrase(text, brands)
-    if exact_match:
-        return exact_match
-    return _extract_brand_alias(text, brands)
+    exact_matches = _extract_known_phrases(text, brands)
+    if exact_matches:
+        return tuple(exact_matches)
+    alias_match = _extract_brand_alias(text, brands)
+    return (alias_match,) if alias_match else ()
+
+
+def _extract_brand(text: str, known_brands: Iterable[str] | None) -> str | None:
+    brands = _extract_brands(text, known_brands)
+    return brands[0] if brands else None
 
 
 def _extract_brand_alias(text: str, brands: Iterable[str]) -> str | None:
@@ -444,6 +917,8 @@ def _extract_event(text: str) -> str | None:
 
     pass_terms = (
         "event pass",
+        "event passed",
+        "event passing",
         "pass event",
         "pass only",
         "just pass",
@@ -461,12 +936,25 @@ def _extract_event(text: str) -> str | None:
     entry_terms = (
         "event entry",
         "entry event",
+        "inbound",
+        "incoming",
+        "arrive",
+        "arrived",
+        "arrival",
+        "coming in",
+        "go in",
+        "going in",
         "entered area",
         "entering area",
         "\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32",
+        "\u0e02\u0e31\u0e1a\u0e40\u0e02\u0e49\u0e32",
+        "\u0e27\u0e34\u0e48\u0e07\u0e40\u0e02\u0e49\u0e32",
+        "\u0e40\u0e02\u0e49\u0e32\u0e21\u0e32",
         "\u0e17\u0e32\u0e07\u0e40\u0e02\u0e49\u0e32",
         "\u0e02\u0e32\u0e40\u0e02\u0e49\u0e32",
         "\u0e40\u0e02\u0e49\u0e32\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48",
+        "\u0e40\u0e02\u0e49\u0e32\u0e08\u0e38\u0e14",
+        "\u0e40\u0e02\u0e49\u0e32\u0e01\u0e25\u0e49\u0e2d\u0e07",
     )
     if any(term in compact_text for term in entry_terms):
         return "entry"
@@ -476,12 +964,23 @@ def _extract_event(text: str) -> str | None:
         "event exits",
         "exit event",
         "exits event",
+        "outbound",
+        "outgoing",
+        "depart",
+        "departed",
+        "departure",
+        "left area",
+        "go out",
+        "going out",
         "exited area",
         "leaving area",
         "\u0e23\u0e16\u0e2d\u0e2d\u0e01",
+        "\u0e2d\u0e2d\u0e01\u0e44\u0e1b",
         "\u0e17\u0e32\u0e07\u0e2d\u0e2d\u0e01",
         "\u0e02\u0e32\u0e2d\u0e2d\u0e01",
         "\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48",
+        "\u0e2d\u0e2d\u0e01\u0e08\u0e38\u0e14",
+        "\u0e2d\u0e2d\u0e01\u0e01\u0e25\u0e49\u0e2d\u0e07",
     )
     if any(term in compact_text for term in exit_terms):
         return "exit"
@@ -498,25 +997,37 @@ def _mentioned_events(compact_text: str) -> set[str]:
     events: set[str] = set()
     thai_entry_terms = (
         "\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32",
+        "\u0e02\u0e31\u0e1a\u0e40\u0e02\u0e49\u0e32",
+        "\u0e27\u0e34\u0e48\u0e07\u0e40\u0e02\u0e49\u0e32",
         "\u0e40\u0e02\u0e49\u0e32\u0e21\u0e32",
         "\u0e02\u0e32\u0e40\u0e02\u0e49\u0e32",
         "\u0e17\u0e32\u0e07\u0e40\u0e02\u0e49\u0e32",
+        "\u0e40\u0e02\u0e49\u0e32\u0e08\u0e38\u0e14",
+        "\u0e40\u0e02\u0e49\u0e32\u0e01\u0e25\u0e49\u0e2d\u0e07",
     )
     thai_exit_terms = (
         "\u0e23\u0e16\u0e2d\u0e2d\u0e01",
         "\u0e2d\u0e2d\u0e01\u0e44\u0e1b",
         "\u0e02\u0e32\u0e2d\u0e2d\u0e01",
         "\u0e17\u0e32\u0e07\u0e2d\u0e2d\u0e01",
+        "\u0e2d\u0e2d\u0e01\u0e08\u0e38\u0e14",
+        "\u0e2d\u0e2d\u0e01\u0e01\u0e25\u0e49\u0e2d\u0e07",
     )
-    if any(_contains_term(compact_text, term) for term in ("entry", "enter", "entered", "entering")) or any(
+    if any(
+        _contains_term(compact_text, term)
+        for term in ("entry", "entries", "enter", "entered", "entering", "inbound", "incoming", "arrival", "arrived")
+    ) or any(
         term in compact_text for term in thai_entry_terms
     ):
         events.add("entry")
-    if any(_contains_term(compact_text, term) for term in ("exit", "exits", "exited", "exiting", "out", "leave", "leaving")) or any(
+    if any(
+        _contains_term(compact_text, term)
+        for term in ("exit", "exits", "exited", "exiting", "outbound", "outgoing", "leave", "leaving", "left")
+    ) or any(
         term in compact_text for term in thai_exit_terms
     ):
         events.add("exit")
-    if any(_contains_term(compact_text, term) for term in ("pass", "passed", "passing")):
+    if any(_contains_term(compact_text, term) for term in ("pass",)):
         events.add("pass")
     return events
 
@@ -548,8 +1059,16 @@ def _wants_brand_color_breakdown(text: str) -> bool:
     normalized_text = text.casefold()
     return (
         "ยี่ห้อ" in normalized_text
+        or "แบรนด์" in normalized_text
+        or "brand/color" in normalized_text
+        or "brand and color" in normalized_text
+        or "make and color" in normalized_text
         or "brand" in normalized_text
+        or "make" in normalized_text
+        or "manufacturer" in normalized_text
         or bool(re.search(r"สี.*อะไร|อะไร.*สี", normalized_text))
+        or bool(re.search(r"ยี่ห้อ.*อะไร|อะไร.*ยี่ห้อ", normalized_text))
+        or bool(re.search(r"แบรนด์.*อะไร|อะไร.*แบรนด์", normalized_text))
         or "color?" in normalized_text
         or "colour?" in normalized_text
     )
@@ -563,9 +1082,16 @@ def _wants_origin_breakdown(text: str) -> bool:
         "origin",
         "region",
         "nationality",
+        "maker country",
+        "manufacturing country",
+        "country of origin",
+        "made in",
         "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28",
+        "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e15\u0e49\u0e19\u0e17\u0e32\u0e07",
+        "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e1c\u0e39\u0e49\u0e1c\u0e25\u0e34\u0e15",
         "\u0e2a\u0e31\u0e0d\u0e0a\u0e32\u0e15\u0e34",
         "\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e01\u0e33\u0e40\u0e19\u0e34\u0e14",
+        "\u0e1c\u0e25\u0e34\u0e15\u0e08\u0e32\u0e01",
     )
     breakdown_terms = (
         "by country",
@@ -574,10 +1100,20 @@ def _wants_origin_breakdown(text: str) -> bool:
         "per country",
         "per origin",
         "breakdown",
+        "group by",
+        "grouped by",
+        "split by",
+        "classify by",
+        "categorized by",
+        "category by",
         "\u0e15\u0e32\u0e21",
         "\u0e41\u0e22\u0e01",
         "\u0e41\u0e22\u0e01\u0e15\u0e32\u0e21",
         "\u0e41\u0e15\u0e48\u0e25\u0e30",
+        "\u0e41\u0e1a\u0e48\u0e07\u0e15\u0e32\u0e21",
+        "\u0e08\u0e33\u0e41\u0e19\u0e01",
+        "\u0e08\u0e31\u0e14\u0e01\u0e25\u0e38\u0e48\u0e21",
+        "\u0e2a\u0e23\u0e38\u0e1b\u0e15\u0e32\u0e21",
     )
     if any(term in compact_text for term in origin_terms) and any(term in compact_text for term in breakdown_terms):
         return True
@@ -591,25 +1127,28 @@ def _wants_origin_brand_breakdown(text: str) -> bool:
         "countries",
         "origin",
         "region",
+        "nationality",
+        "made in",
         "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28",
         "\u0e2a\u0e31\u0e0d\u0e0a\u0e32\u0e15\u0e34",
+        "\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e01\u0e33\u0e40\u0e19\u0e34\u0e14",
     )
-    brand_terms = ("brand", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d")
+    brand_terms = ("brand", "brands", "make", "maker", "manufacturer", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d", "\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c")
     return any(term in compact_text for term in origin_terms) and any(term in compact_text for term in brand_terms)
 
 
 def _extract_cross_breakdowns(text: str) -> tuple[str, ...]:
     compact_text = re.sub(r"\s+", " ", text.casefold())
     has_origin = _has_any_term(compact_text, _ORIGIN_BREAKDOWN_TERMS)
-    has_brand = _has_any_term(compact_text, ("brand", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d"))
-    has_type = _has_any_term(compact_text, ("vehicle type", "vehicle types", "type", "types", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17"))
-    has_camera = _has_any_term(compact_text, ("camera", "cctv", "\u0e01\u0e25\u0e49\u0e2d\u0e07"))
-    has_event = _has_any_term(compact_text, ("event", "events", "status", "entry", "exit", "pass", "\u0e2a\u0e16\u0e32\u0e19\u0e30", "\u0e40\u0e02\u0e49\u0e32", "\u0e2d\u0e2d\u0e01", "\u0e1c\u0e48\u0e32\u0e19"))
-    has_hour = _has_any_term(compact_text, ("hour", "hours", "time", "\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07", "\u0e40\u0e27\u0e25\u0e32"))
-    has_color = _has_any_term(compact_text, ("color", "colour", "\u0e2a\u0e35"))
-    has_route = _has_any_term(compact_text, ("route", "path", "\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e40\u0e14\u0e34\u0e19\u0e17\u0e32\u0e07"))
-    has_start_end = _has_any_term(compact_text, ("start", "end", "origin destination", "od", "from", "to", "\u0e15\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07", "\u0e08\u0e32\u0e01", "\u0e44\u0e1b"))
-    has_breakdown = _has_any_term(compact_text, ("by", "per", "breakdown", "cross", "\u0e15\u0e32\u0e21", "\u0e41\u0e22\u0e01", "\u0e41\u0e15\u0e48\u0e25\u0e30"))
+    has_brand = _has_any_term(compact_text, ("brand", "brands", "make", "maker", "manufacturer", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d", "\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c"))
+    has_type = _has_any_term(compact_text, ("vehicle type", "vehicle types", "type", "types", "class", "category", "\u0e0a\u0e19\u0e34\u0e14\u0e23\u0e16", "\u0e0a\u0e19\u0e34\u0e14", "\u0e2b\u0e21\u0e27\u0e14\u0e23\u0e16", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17"))
+    has_camera = _has_any_term(compact_text, ("camera", "cameras", "cam", "cams", "cctv", "\u0e01\u0e25\u0e49\u0e2d\u0e07", "\u0e08\u0e38\u0e14\u0e15\u0e23\u0e27\u0e08"))
+    has_event = _has_any_term(compact_text, ("event", "events", "status", "state", "entry", "exit", "pass", "inbound", "outbound", "\u0e2a\u0e16\u0e32\u0e19\u0e30", "\u0e40\u0e02\u0e49\u0e32", "\u0e2d\u0e2d\u0e01", "\u0e1c\u0e48\u0e32\u0e19"))
+    has_hour = _has_any_term(compact_text, ("hour", "hours", "hourly", "time", "time slot", "time period", "\u0e23\u0e32\u0e22\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07", "\u0e15\u0e48\u0e2d\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07", "\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07", "\u0e40\u0e27\u0e25\u0e32"))
+    has_color = _has_any_term(compact_text, ("color", "colors", "colour", "colours", "\u0e2a\u0e35", "\u0e2a\u0e35\u0e23\u0e16"))
+    has_route = _has_any_term(compact_text, ("route", "routes", "path", "paths", "track group", "route group", "trajectory", "journey", "\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e40\u0e14\u0e34\u0e19\u0e17\u0e32\u0e07", "\u0e25\u0e33\u0e14\u0e31\u0e1a\u0e01\u0e25\u0e49\u0e2d\u0e07"))
+    has_start_end = _has_any_term(compact_text, ("start", "end", "origin destination", "od", "o/d", "from", "to", "source", "destination", "\u0e15\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07", "\u0e08\u0e38\u0e14\u0e40\u0e23\u0e34\u0e48\u0e21", "\u0e08\u0e38\u0e14\u0e08\u0e1a", "\u0e08\u0e32\u0e01", "\u0e44\u0e1b"))
+    has_breakdown = _has_any_term(compact_text, ("by", "per", "breakdown", "cross", "group by", "grouped by", "split by", "classify", "categorize", "\u0e15\u0e32\u0e21", "\u0e41\u0e22\u0e01", "\u0e41\u0e22\u0e01\u0e15\u0e32\u0e21", "\u0e41\u0e1a\u0e48\u0e07\u0e15\u0e32\u0e21", "\u0e08\u0e33\u0e41\u0e19\u0e01", "\u0e41\u0e15\u0e48\u0e25\u0e30"))
 
     values: tuple[str, ...] = ()
     if has_origin and has_brand and has_breakdown:
@@ -641,7 +1180,12 @@ _ORIGIN_BREAKDOWN_TERMS = (
     "origin",
     "region",
     "nationality",
+    "country of origin",
+    "made in",
+    "maker country",
     "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28",
+    "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e15\u0e49\u0e19\u0e17\u0e32\u0e07",
+    "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e1c\u0e39\u0e49\u0e1c\u0e25\u0e34\u0e15",
     "\u0e2a\u0e31\u0e0d\u0e0a\u0e32\u0e15\u0e34",
     "\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e01\u0e33\u0e40\u0e19\u0e34\u0e14",
 )
@@ -663,14 +1207,29 @@ def _wants_route(text: str) -> bool:
         term in normalized_text
         for term in (
             "route",
+            "routes",
+            "routing",
             "path",
+            "paths",
             "direction",
+            "directions",
             "travel",
+            "travels",
+            "journey",
+            "trajectory",
+            "track group",
+            "route group",
+            "camera sequence",
             "เส้นทาง",
             "เดินทาง",
+            "วิ่งไปทางไหน",
             "ไปทางไหน",
+            "มาจากไหน",
+            "ไปไหน",
             "ผ่านกล้องไหน",
             "ผ่านทางไหน",
+            "ลำดับกล้อง",
+            "กล้องที่ผ่าน",
         )
     )
 
@@ -684,14 +1243,24 @@ def _wants_vehicle_list(text: str) -> bool:
             "คันใด",
             "รถอะไรบ้าง",
             "มีรถอะไร",
+            "มีคันไหน",
+            "รถใดบ้าง",
+            "คันอะไร",
+            "รายละเอียดรถ",
+            "ข้อมูลรถ",
             "รายการรถ",
             "รายชื่อรถ",
             "which vehicles",
             "which cars",
+            "what vehicles",
+            "what cars",
             "list vehicles",
             "list cars",
             "show vehicles",
             "show cars",
+            "vehicle list",
+            "car list",
+            "details",
         )
     )
 
@@ -707,24 +1276,30 @@ def _wants_distinct_vehicle_count(text: str) -> bool:
             "\u0e44\u0e21\u0e48\u0e19\u0e31\u0e1a\u0e0b\u0e49\u0e33\u0e01\u0e31\u0e19",
             "distinct vehicles",
             "distinct cars",
+            "distinct count",
             "unique vehicles",
             "unique cars",
+            "unique count",
+            "dedup",
             "dedupe",
             "deduplicated",
+            "without duplicates",
+            "no duplicates",
+            "not duplicated",
         )
     )
 
 
 def _extract_vehicle_ordinal(text: str) -> int | None:
     compact_text = re.sub(r"\s+", " ", text.casefold())
-    if any(term in compact_text for term in ("คันสุดท้าย", "รถคันสุดท้าย", "รถสุดท้าย", "last vehicle", "last car")):
+    if any(term in compact_text for term in ("คันสุดท้าย", "รถคันสุดท้าย", "รถสุดท้าย", "ลำดับสุดท้าย", "last vehicle", "last car", "last one")):
         return -1
-    if any(term in compact_text for term in ("คันแรก", "รถคันแรก", "รถแรก", "first vehicle", "first car")):
+    if any(term in compact_text for term in ("คันแรก", "รถคันแรก", "รถแรก", "ลำดับแรก", "first vehicle", "first car", "first one")):
         return 1
-    if "arrived first" in compact_text or "came first" in compact_text:
+    if any(term in compact_text for term in ("arrived first", "came first", "seen first", "first seen")):
         return 1
 
-    thai_match = re.search(r"(?:คันที่|รถคันที่|ลำดับที่)\s*(\d+)", compact_text)
+    thai_match = re.search(r"(?:คันที่|รถคันที่|ลำดับที่|อันดับที่|หมายเลข)\s*(\d+)", compact_text)
     if thai_match:
         return int(thai_match.group(1))
 
@@ -756,6 +1331,197 @@ def _extract_vehicle_ordinal(text: str) -> int | None:
 def _wants_peak_hour(text: str) -> bool:
     compact_text = re.sub(r"\s+", " ", text.casefold())
     return _has_hour_term(compact_text) and _has_peak_term(compact_text)
+
+
+def _wants_presence_count(text: str) -> bool:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    return any(
+        term in compact_text
+        for term in (
+            "จอดอยู่",
+            "จอดค้าง",
+            "จอดในช่วง",
+            "จอดตอน",
+            "หยุดอยู่",
+            "หยุดค้าง",
+            "ค้างอยู่",
+            "ค้างในกล้อง",
+            "ค้างกล้อง",
+            "ยังค้าง",
+            "อยู่ในกล้อง",
+            "อยู่ที่กล้อง",
+            "อยู่ในช่วง",
+            "อยู่ตอน",
+            "ยังเห็น",
+            "ยังอยู่",
+            "รถอยู่",
+            "track อยู่",
+            "tracking อยู่",
+            "parked",
+            "parking",
+            "stopped",
+            "stationary",
+            "standing",
+            "present",
+            "visible",
+            "still visible",
+            "remain",
+            "remained",
+            "remaining",
+            "active track",
+            "in camera",
+            "inside camera",
+            "dwell",
+            "dwelling",
+        )
+    )
+
+
+def _extract_presence_min_seconds(text: str) -> int:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    minute_match = re.search(r"(?:อย่างน้อย|ขั้นต่ำ|ไม่น้อยกว่า|at least|min(?:imum)?(?: of)?)?\s*(\d+)\s*(?:นาที|minutes?|mins?|m)(?![a-z])", compact_text)
+    if minute_match:
+        return int(minute_match.group(1)) * 60
+    second_match = re.search(r"(?:อย่างน้อย|ขั้นต่ำ|ไม่น้อยกว่า|at least|min(?:imum)?(?: of)?)?\s*(\d+)\s*(?:วินาที|seconds?|secs?|s)(?![a-z])", compact_text)
+    if second_match:
+        return int(second_match.group(1))
+    return 10 * 60
+
+
+def _wants_tracking_duration(text: str) -> bool:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    return any(
+        term in compact_text
+        for term in (
+            "tracking duration",
+            "track duration",
+            "duration",
+            "tracking time",
+            "track time",
+            "dwell time",
+            "stay time",
+            "time stayed",
+            "first seen",
+            "last seen",
+            "lost track",
+            "tracking lost",
+            "ระยะเวลา track",
+            "ระยะเวลา tracking",
+            "ระยะเวลาติดตาม",
+            "เวลาติดตาม",
+            "เวลาที่ track",
+            "เวลาที่จับได้",
+            "เวลาจับได้",
+            "เวลาอยู่ในกล้อง",
+            "เวลาอยู่",
+            "ก่อนหาย",
+            "track หาย",
+            "tracking หาย",
+            "หายจากกล้อง",
+            "track หายไป",
+            "tracking หายไป",
+            "ติดตามนาน",
+            "track นาน",
+            "tracking นาน",
+            "ค้างนาน",
+            "จอดนาน",
+            "อยู่นาน",
+            "นานเท่าไหร่",
+            "กี่วินาที",
+            "กี่นาที",
+        )
+    )
+
+
+def _wants_hour_average(text: str) -> bool:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    return _has_hour_term(compact_text) and any(
+        term in compact_text
+        for term in (
+            "average",
+            "avg",
+            "mean",
+            "per hour average",
+            "hourly average",
+            "average per hour",
+            "เฉลี่ย",
+            "ค่าเฉลี่ย",
+            "เฉลี่ยต่อชั่วโมง",
+            "ต่อชั่วโมงเฉลี่ย",
+        )
+    )
+
+
+def _extract_average_hours(text: str) -> int | None:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    day_match = re.search(r"(\d+)\s*(?:วัน|days?|d)(?![a-z])", compact_text)
+    hour_matches = list(re.finditer(r"(\d+)\s*(?:ชั่วโมง|hours?|hrs?|h)(?![a-z])", compact_text))
+
+    if day_match and hour_matches:
+        day_hours = int(day_match.group(1)) * 24
+        hour_value = int(hour_matches[-1].group(1))
+        if hour_value == day_hours:
+            return hour_value
+        return day_hours + hour_value
+    if day_match:
+        return int(day_match.group(1)) * 24
+
+    for match in hour_matches:
+        prefix = compact_text[max(0, match.start() - 18):match.start()]
+        if any(term in prefix for term in ("แต่ละ", "ต่อ", "per ", "each ", "every ")):
+            continue
+        return int(match.group(1))
+    return None
+
+
+def _extract_count_comparison(text: str) -> tuple[str | None, int | None]:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    patterns: tuple[tuple[str, str], ...] = (
+        ("gte", r"(?:>=|≥)\s*(\d+)"),
+        ("lte", r"(?:<=|≤)\s*(\d+)"),
+        ("gte", r"(?:ไม่น้อยกว่า|ไม่ต่ำกว่า|อย่างน้อย|ขั้นต่ำ|ตั้งแต่|at least|minimum of|min(?:imum)?)\s*(\d+)"),
+        ("lte", r"(?:ไม่เกิน|ไม่มากกว่า|อย่างมาก|สูงสุด|ไม่เกินกว่า|at most|maximum of|max(?:imum)?)\s*(\d+)"),
+        ("gt", r"(?:>|มากกว่า|เกินกว่า|เกิน|more than|greater than|over|above)\s*(\d+)"),
+        ("lt", r"(?:<|น้อยกว่า|ต่ำกว่า|ไม่ถึง|less than|fewer than|under|below)\s*(\d+)"),
+        ("gte", r"(\d+)\s*(?:คัน|ครั้ง|records?|vehicles?|cars?)?\s*(?:ขึ้นไป|หรือมากกว่า|or more|and above)"),
+        ("lte", r"(\d+)\s*(?:คัน|ครั้ง|records?|vehicles?|cars?)?\s*(?:ลงมา|หรือน้อยกว่า|or less|and below)"),
+    )
+    for operator, pattern in patterns:
+        match = re.search(pattern, compact_text)
+        if match:
+            return operator, int(match.group(1))
+    return None, None
+
+
+def _extract_group_comparison(text: str, brands: tuple[str, ...]) -> dict[str, object] | None:
+    if len(brands) < 2:
+        return None
+
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    compare_terms = (
+        "เยอะกว่า",
+        "มากกว่า",
+        "น้อยกว่า",
+        "ต่างกัน",
+        "ห่างกัน",
+        "เทียบกับ",
+        "เปรียบเทียบ",
+        "compare",
+        "compared to",
+        "more than",
+        "greater than",
+        "less than",
+        "fewer than",
+        "difference",
+    )
+    if not any(term in compact_text for term in compare_terms):
+        return None
+
+    return {
+        "dimension": "brand",
+        "left": brands[0],
+        "right": brands[1],
+    }
 
 
 def _wants_peak_camera(text: str) -> bool:
@@ -813,10 +1579,18 @@ def _has_camera_question_term(compact_text: str) -> bool:
         for term in (
             "which camera",
             "which cctv",
+            "which cam",
             "camera has",
             "cctv has",
+            "cam has",
+            "top camera",
+            "top cctv",
+            "busiest camera",
+            "busiest cctv",
             "\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e44\u0e2b\u0e19",
             "\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e15\u0e31\u0e27\u0e44\u0e2b\u0e19",
+            "\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e43\u0e14",
+            "\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e2d\u0e30\u0e44\u0e23",
         )
     )
 
@@ -830,9 +1604,18 @@ def _has_peak_term(compact_text: str) -> bool:
             "busiest",
             "maximum",
             "max",
+            "top",
+            "largest",
+            "greatest",
+            "peak",
+            "peakest",
+            "เยอะสุด",
             "\u0e21\u0e32\u0e01\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14",
             "\u0e40\u0e22\u0e2d\u0e30\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14",
             "\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14",
+            "\u0e1e\u0e35\u0e04",
+            "\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19",
+            "\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19\u0e2a\u0e38\u0e14",
         )
     )
 
@@ -843,8 +1626,11 @@ def _has_thai_entry_exit_phrase(compact_text: str) -> bool:
         for term in (
             "\u0e40\u0e02\u0e49\u0e32\u0e2d\u0e2d\u0e01",
             "\u0e40\u0e02\u0e49\u0e32-\u0e2d\u0e2d\u0e01",
+            "\u0e40\u0e02\u0e49\u0e32/\u0e2d\u0e2d\u0e01",
             "\u0e02\u0e32\u0e40\u0e02\u0e49\u0e32\u0e02\u0e32\u0e2d\u0e2d\u0e01",
             "\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e23\u0e16\u0e2d\u0e2d\u0e01",
+            "\u0e40\u0e02\u0e49\u0e32\u0e41\u0e25\u0e30\u0e2d\u0e2d\u0e01",
+            "\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e2d\u0e2d\u0e01",
         )
     )
 

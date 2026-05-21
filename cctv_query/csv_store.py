@@ -6,7 +6,9 @@ from pathlib import Path
 from cctv_query.models import CCTVRecord
 
 
-REQUIRED_COLUMNS = ("Date", "CCTV_ID", "Timestamp", "Brand", "Color", "Type")
+REQUIRED_COLUMNS = ("Date", "CCTV_ID", "Brand", "Color", "Type")
+FIRST_SEEN_COLUMNS = ("First_Seen", "FirstSeen", "First_Timestamp", "Timestamp")
+LAST_SEEN_COLUMNS = ("Last_Seen", "LastSeen", "Tracking_Lost", "Lost_At", "Last_Timestamp", "Timestamp")
 
 
 def load_records(path: str | Path) -> list[CCTVRecord]:
@@ -21,15 +23,17 @@ def load_records(path: str | Path) -> list[CCTVRecord]:
 
         for row_number, row in enumerate(reader, start=2):
             try:
+                first_seen = _first_present_value(row, FIRST_SEEN_COLUMNS)
                 records.append(
                     CCTVRecord.from_values(
                         row["Date"],
                         row["CCTV_ID"],
-                        row["Timestamp"],
+                        first_seen,
                         row["Brand"],
                         row["Color"],
                         row["Type"],
                         row.get("Event"),
+                        _first_present_value(row, LAST_SEEN_COLUMNS, default=first_seen),
                     )
                 )
             except (KeyError, ValueError) as exc:
@@ -43,3 +47,16 @@ def _validate_columns(fieldnames: list[str], csv_path: Path) -> None:
     if missing:
         joined = ", ".join(missing)
         raise ValueError(f"CSV file {csv_path} is missing required column(s): {joined}")
+    if not any(column in fieldnames for column in FIRST_SEEN_COLUMNS):
+        joined = " or ".join(FIRST_SEEN_COLUMNS)
+        raise ValueError(f"CSV file {csv_path} is missing required time column: {joined}")
+
+
+def _first_present_value(row: dict[str, str], columns: tuple[str, ...], *, default: str | None = None) -> str:
+    for column in columns:
+        value = row.get(column)
+        if value:
+            return value
+    if default is not None:
+        return default
+    raise KeyError(columns[0])

@@ -1,9 +1,17 @@
 import unittest
+from pathlib import Path
 
 from cctv_query.engine import CCTVQueryEngine
 from cctv_query.llm_normalizer import LLMNormalizationResult
 from cctv_query.models import CCTVRecord
-from cctv_query.web import handle_batch_query_payload, handle_metadata_payload, handle_query_payload, handle_sql_to_csv_payload
+from cctv_query.web import (
+    handle_batch_query_payload,
+    handle_csv_files_payload,
+    handle_metadata_payload,
+    handle_query_payload,
+    handle_sql_to_csv_payload,
+    resolve_project_csv_path,
+)
 
 
 class WebApiTests(unittest.TestCase):
@@ -81,6 +89,21 @@ class WebApiTests(unittest.TestCase):
 
         self.assertEqual(response["dates"], ["12-05-2026"])
         self.assertEqual(response["cctv_ids"], ["CCTV01", "CCTV02"])
+
+    def test_handle_csv_files_payload_lists_loadable_project_csvs(self):
+        current = resolve_project_csv_path("cctv_vehicle_log_routed.csv")
+
+        response = handle_csv_files_payload(current)
+        routed = next(item for item in response["files"] if item["path"] == "cctv_vehicle_log_routed.csv")
+
+        self.assertEqual(response["active_csv"], "cctv_vehicle_log_routed.csv")
+        self.assertTrue(routed["active"])
+        self.assertTrue(routed["loadable"])
+        self.assertGreater(routed["row_count"], 0)
+
+    def test_resolve_project_csv_path_rejects_outside_project(self):
+        with self.assertRaises(ValueError):
+            resolve_project_csv_path(str(Path("/tmp/outside.csv")))
 
     def test_handle_query_payload_marks_out_of_range(self):
         response = handle_query_payload(self.engine, {"question": "วันที่ 14 มีรถผ่านกี่คัน"})

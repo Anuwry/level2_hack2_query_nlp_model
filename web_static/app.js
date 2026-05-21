@@ -8,6 +8,10 @@ const cctvFilter = document.querySelector("#cctvFilter");
 const startTimeFilter = document.querySelector("#startTimeFilter");
 const endTimeFilter = document.querySelector("#endTimeFilter");
 const eventFilterButtons = document.querySelectorAll("[data-event-filter]");
+const dataCsvSelect = document.querySelector("#dataCsvSelect");
+const applyCsvFileButton = document.querySelector("#applyCsvFileButton");
+const refreshCsvFilesButton = document.querySelector("#refreshCsvFilesButton");
+const dataCsvMeta = document.querySelector("#dataCsvMeta");
 const csvForm = document.querySelector("#csvForm");
 const csvInput = document.querySelector("#csvInput");
 const csvFile = document.querySelector("#csvFile");
@@ -42,6 +46,14 @@ const summaryOverview = document.querySelector("#summaryOverview");
 const summaryTitle = document.querySelector("#summaryTitle");
 const summaryHead = document.querySelector("#summaryPanel thead tr");
 const summaryRows = document.querySelector("#summaryRows");
+const summaryScopeDate = document.querySelector("#summaryScopeDate");
+const summaryScopeCctv = document.querySelector("#summaryScopeCctv");
+const summaryScopeStart = document.querySelector("#summaryScopeStart");
+const summaryScopeEnd = document.querySelector("#summaryScopeEnd");
+const summaryFilterChoices = document.querySelector("#summaryFilterChoices");
+const clearSummaryFilterButton = document.querySelector("#clearSummaryFilterButton");
+const summaryFilterTotal = document.querySelector("#summaryFilterTotal");
+const summaryCompareOutput = document.querySelector("#summaryCompareOutput");
 const routeList = document.querySelector("#routeList");
 const batchRows = document.querySelector("#batchRows");
 const clarificationModal = document.querySelector("#clarificationModal");
@@ -63,6 +75,14 @@ let suppressNextOptionalFollowUp = false;
 let pendingSummaryMode = null;
 let summaryModeOverride = null;
 let submitQuestionOnly = false;
+let activeCsvPath = "";
+let currentSummaryRows = [];
+let currentSummaryColumns = [];
+let currentSummaryMode = "";
+let currentSummaryTitle = "Current breakdown";
+let summaryFilterValues = new Set();
+let summaryRowScopes = new Map();
+let summaryMetadata = { dates: [], cctv_ids: [], colors: [] };
 const acknowledgedWarningKeys = new Set();
 const csvSample = `Question ID,CCTV ID,Time Range,Query
 Q1,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อและสี
@@ -146,8 +166,20 @@ clearButton.addEventListener("click", () => {
   cctvFilter.value = "";
   startTimeFilter.value = "";
   endTimeFilter.value = "";
+  summaryScopeDate.value = "";
+  summaryScopeCctv.value = "";
+  summaryScopeStart.value = "";
+  summaryScopeEnd.value = "";
   setEventFilter("");
   questionInput.focus();
+});
+
+applyCsvFileButton.addEventListener("click", () => {
+  selectDataCsv(dataCsvSelect.value);
+});
+
+refreshCsvFilesButton.addEventListener("click", () => {
+  loadCsvFiles();
 });
 
 csvForm.addEventListener("submit", async (event) => {
@@ -347,6 +379,37 @@ csvAnswerMode.addEventListener("change", () => {
   }
 });
 
+clearSummaryFilterButton.addEventListener("click", () => {
+  summaryFilterValues = new Set();
+  renderSummaryFromState(true);
+});
+
+summaryRows.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-summary-row-calc]");
+  if (!button) {
+    return;
+  }
+  calculateSummaryRow(button.dataset.summaryRowCalc || "");
+});
+
+summaryRows.addEventListener("change", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const key = target.dataset.summaryRowKey || "";
+  if (!key) {
+    return;
+  }
+  if (target.classList.contains("summary-row-compare")) {
+    updateSummaryRowCompare(key, target.checked);
+    return;
+  }
+  if (target.dataset.summaryScopeField) {
+    updateSummaryRowScope(key, target.dataset.summaryScopeField, target.value || "");
+  }
+});
+
 followUpActions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-followup-question]");
   if (!button) {
@@ -356,6 +419,7 @@ followUpActions.addEventListener("click", (event) => {
   runPresetQuestion(button.dataset.followupQuestion || "", button.dataset.summaryMode || null);
 });
 
+loadCsvFiles();
 loadMetadata();
 
 function runPresetQuestion(question, summaryMode) {
@@ -383,7 +447,9 @@ function renderResult(result) {
   eventMetric.textContent = result.event_count ?? 0;
   routeMetric.textContent = Array.isArray(result.routes) ? result.routes.length : 0;
   renderSummaryOverview(result);
-  renderSummary(summaryTableRows(result), summaryTableColumns(result), summaryModeLabel(summaryModeForResult(result)));
+  syncSummaryScopeFromQuery(result.query || {});
+  const mode = summaryModeForResult(result);
+  renderSummary(summaryTableRows(result), summaryTableColumns(result), summaryModeLabel(mode), mode);
   renderFollowUpActions(result);
   renderRoutes(result.routes || []);
 }
@@ -408,6 +474,7 @@ function renderBatchResult(batch) {
   summaryTitle.textContent = "Current breakdown";
   summaryHead.innerHTML = "<th>Group</th><th>Value</th><th>Count</th>";
   summaryRows.innerHTML = "";
+  resetSummaryFilter();
   renderBatchRows(rows);
   exportCsvButton.disabled = !batch.answers_csv;
 }
@@ -722,7 +789,7 @@ function hasVehicleContext(query) {
 }
 
 function hasBrandContext(query) {
-  return Boolean(query.brand);
+  return Boolean(query.brand || (Array.isArray(query.brands) && query.brands.length));
 }
 
 function hasOriginContext(query) {
@@ -924,6 +991,9 @@ function buildClarifiedQuestion(result, clarification, option) {
 function buildStructuredQuestion(query, override = {}) {
   const parts = [];
   const replacingIntent = Boolean(override.mode || override.event || override.unclosedEntry);
+  if (Array.isArray(query.condition_groups) && query.condition_groups.length) {
+    parts.push(query.condition_groups.map(conditionGroupPhrase).join(" or "));
+  }
   const date = override.date || query.date;
   if (date) {
     parts.push(`date ${date}`);
@@ -934,8 +1004,9 @@ function buildStructuredQuestion(query, override = {}) {
   if (query.start_time && query.end_time) {
     parts.push(`from ${query.start_time} to ${query.end_time}`);
   }
-  if (query.brand) {
-    parts.push(`brand ${query.brand}`);
+  const queryBrands = Array.isArray(query.brands) && query.brands.length ? query.brands : (query.brand ? [query.brand] : []);
+  if (queryBrands.length) {
+    parts.push(`brand ${queryBrands.join(" and ")}`);
   }
   if (Array.isArray(query.brand_origins) && query.brand_origins.length) {
     parts.push(`origin ${query.brand_origins.join(" and ")}`);
@@ -958,6 +1029,9 @@ function buildStructuredQuestion(query, override = {}) {
   }
   if (query.wants_distinct_vehicle_count) {
     parts.push("distinct vehicles");
+  }
+  if (query.count_operator && Number.isFinite(Number(query.count_threshold))) {
+    parts.push(`${countOperatorSymbol(query.count_operator)} ${query.count_threshold}`);
   }
   if (override.unclosedEntry && override.mode !== "unclosed_entry_camera") {
     parts.push("entry without exit");
@@ -997,6 +1071,41 @@ function buildStructuredQuestion(query, override = {}) {
     parts.push("by brand and color");
   }
   return parts.join(" ") || query.raw_question || questionInput.value.trim();
+}
+
+function countOperatorSymbol(operator) {
+  return {
+    gt: ">",
+    gte: ">=",
+    lt: "<",
+    lte: "<=",
+    eq: "=",
+  }[operator] || operator;
+}
+
+function conditionGroupPhrase(group) {
+  const parts = [];
+  if (group.date) {
+    parts.push(`date ${group.date}`);
+  }
+  if (group.start_time && group.end_time) {
+    parts.push(`from ${group.start_time} to ${group.end_time}`);
+  }
+  const brands = Array.isArray(group.brands) ? group.brands : (group.brand ? [group.brand] : []);
+  if (brands.length) {
+    parts.push(`brand ${brands.join(" and ")}`);
+  }
+  const colors = Array.isArray(group.colors) ? group.colors : (group.color ? [group.color] : []);
+  if (colors.length) {
+    parts.push(`color ${colors.join(" and ")}`);
+  }
+  if (group.vehicle_type) {
+    parts.push(`type ${group.vehicle_type}`);
+  }
+  if (group.event) {
+    parts.push(`event ${group.event}`);
+  }
+  return parts.join(" ");
 }
 
 function crossBreakdownQuestionPhrase(name) {
@@ -1062,10 +1171,88 @@ async function loadMetadata() {
     if (!response.ok) {
       throw new Error(payload.error || "Could not load filters");
     }
+    summaryMetadata = {
+      dates: payload.dates || [],
+      cctv_ids: payload.cctv_ids || [],
+      colors: payload.colors || [],
+    };
     populateSelect(dateFilter, payload.dates || [], "ทุกวันที่");
     populateSelect(cctvFilter, payload.cctv_ids || [], "ทุกกล้อง");
+    populateSelect(summaryScopeDate, payload.dates || [], "วันที่เดิม");
+    populateSelect(summaryScopeCctv, payload.cctv_ids || [], "กล้องเดิม");
   } catch (error) {
     console.warn(error.message);
+  }
+}
+
+async function loadCsvFiles() {
+  refreshCsvFilesButton.disabled = true;
+  dataCsvMeta.textContent = "Loading CSV files...";
+  try {
+    const response = await fetch("/api/csv-files");
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Could not load CSV files");
+    }
+    renderDataCsvFiles(payload);
+  } catch (error) {
+    dataCsvMeta.textContent = error.message;
+  } finally {
+    refreshCsvFilesButton.disabled = false;
+  }
+}
+
+function renderDataCsvFiles(payload) {
+  const files = payload.files || [];
+  activeCsvPath = payload.active_csv || "";
+  dataCsvSelect.innerHTML = "";
+  files.forEach((file) => {
+    const option = document.createElement("option");
+    option.value = file.path;
+    option.disabled = !file.loadable;
+    option.textContent = file.loadable
+      ? `${file.path} (${file.row_count} rows)`
+      : `${file.path} (not data CSV)`;
+    option.title = file.error || file.absolute_path || file.path;
+    dataCsvSelect.appendChild(option);
+  });
+  if (activeCsvPath) {
+    dataCsvSelect.value = activeCsvPath;
+  }
+  const loadableCount = files.filter((file) => file.loadable).length;
+  applyCsvFileButton.disabled = !loadableCount;
+  dataCsvMeta.textContent = activeCsvPath
+    ? `Active: ${activeCsvPath} | ${loadableCount}/${files.length} CSV files loadable`
+    : `${loadableCount}/${files.length} CSV files loadable`;
+}
+
+async function selectDataCsv(path) {
+  if (!path) {
+    renderError("Please select a CSV file.");
+    return;
+  }
+  applyCsvFileButton.disabled = true;
+  statusPill.textContent = "Loading CSV";
+  try {
+    const response = await fetch("/api/select-csv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Could not switch CSV");
+    }
+    activeCsvPath = payload.active_csv || path;
+    await loadMetadata();
+    await loadCsvFiles();
+    renderNotice(`ใช้ CSV: ${activeCsvPath}`);
+    statusPill.textContent = "Ready";
+  } catch (error) {
+    renderError(error.message);
+    statusPill.textContent = "Error";
+  } finally {
+    applyCsvFileButton.disabled = false;
   }
 }
 
@@ -1252,13 +1439,163 @@ function summaryCardHtml(title, rows) {
   return `<section class="summary-card"><h3>${escapeHtml(title)}</h3><ol>${items}</ol></section>`;
 }
 
-function renderSummary(rows, columns = summaryTableColumns({}), title = "Current breakdown") {
+function renderSummary(rows, columns = summaryTableColumns({}), title = "Current breakdown", mode = "") {
+  const nextRows = rows || [];
+  const nextColumns = columns || [];
+  const previousColumnKeys = currentSummaryColumns.map((column) => column.key).join("|");
+  const nextColumnKeys = nextColumns.map((column) => column.key).join("|");
+  if (mode !== currentSummaryMode || previousColumnKeys !== nextColumnKeys) {
+    summaryFilterValues = new Set();
+    summaryRowScopes = new Map();
+  }
+  currentSummaryRows = nextRows;
+  currentSummaryColumns = nextColumns;
+  currentSummaryMode = mode;
+  currentSummaryTitle = title;
+  pruneSummaryRowScopes();
+  renderSummaryFromState(true);
+}
+
+function renderSummaryFromState(rebuildFilter) {
+  const rows = currentSummaryRows || [];
+  const columns = currentSummaryColumns.length ? currentSummaryColumns : [{ key: "name", label: "Group" }, { key: "count", label: "Count" }];
+  if (rebuildFilter) {
+    populateSummaryFilter(rows, columns);
+  }
+  const filteredRows = filteredSummaryRows(rows, columns);
+  const total = filteredRows.reduce((sum, row) => sum + Number(row.count || 0), 0);
+  summaryFilterTotal.textContent = summaryFilterValues.size
+    ? `Total: ${total} (${filteredRows.length}/${rows.length})`
+    : `Total: ${total} (${rows.length})`;
+  clearSummaryFilterButton.disabled = summaryFilterValues.size === 0;
+  renderSummaryTable(filteredRows, columns, currentSummaryTitle);
+  updateSummaryComparison();
+}
+
+function populateSummaryFilter(rows, columns) {
+  const availableKeys = new Set(rows.map((row) => summaryRowKey(row, columns)));
+  summaryFilterValues = new Set([...summaryFilterValues].filter((key) => availableKeys.has(key)));
+  summaryFilterChoices.innerHTML = "";
+  if (!rows.length) {
+    summaryFilterChoices.textContent = "No rows";
+    summaryFilterChoices.setAttribute("aria-disabled", "true");
+    return;
+  }
+  rows.forEach((row) => {
+    const key = summaryRowKey(row, columns);
+    const label = document.createElement("label");
+    label.className = "summary-filter-choice";
+    label.title = summaryRowLabel(row, columns);
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = key;
+    checkbox.checked = summaryFilterValues.has(key);
+    const labelText = document.createElement("span");
+    labelText.textContent = summaryRowLabel(row, columns);
+    const count = document.createElement("strong");
+    count.textContent = row.count ?? 0;
+    label.append(checkbox, labelText, count);
+    summaryFilterChoices.appendChild(label);
+  });
+  summaryFilterChoices.toggleAttribute("aria-disabled", rows.length === 0);
+  summaryFilterChoices.querySelectorAll("input[type='checkbox']").forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) {
+        summaryFilterValues.add(input.value);
+      } else {
+        summaryFilterValues.delete(input.value);
+      }
+      renderSummaryFromState(false);
+    });
+  });
+}
+
+function filteredSummaryRows(rows, columns) {
+  if (!summaryFilterValues.size) {
+    return rows;
+  }
+  return rows.filter((row) => summaryFilterValues.has(summaryRowKey(row, columns)));
+}
+
+function summaryRowKey(row, columns) {
+  return columns
+    .filter((column) => column.key !== "count")
+    .map((column) => String(row[column.key] ?? ""))
+    .join("\u001f");
+}
+
+function summaryRowLabel(row, columns) {
+  return columns
+    .filter((column) => column.key !== "count")
+    .map((column) => String(row[column.key] ?? ""))
+    .filter(Boolean)
+    .join(" / ") || "Row";
+}
+
+function updateSummaryComparison() {
+  if (!summaryCompareOutput) {
+    return;
+  }
+  const compared = currentSummaryRows
+    .map((row) => {
+      const key = summaryRowKey(row, currentSummaryColumns);
+      const scope = summaryRowScopes.get(key);
+      return {
+        key,
+        label: summaryScopedLabel(summaryRowLabel(row, currentSummaryColumns), scope),
+        count: scope?.count,
+        event_count: scope?.event_count,
+        compare: scope?.compare,
+        scope,
+      };
+    })
+    .filter((item) => item.compare && typeof item.count === "number");
+
+  if (!compared.length) {
+    summaryCompareOutput.textContent = "กด Calc ในแต่ละแถวแล้วติ๊ก Compare เพื่อเทียบผลที่กรองแยกกัน";
+    return;
+  }
+  if (compared.length === 1) {
+    summaryCompareOutput.textContent = `เลือกอีก 1 แถวเพื่อเทียบกับ ${compared[0].label} (${compared[0].count} คัน)`;
+    return;
+  }
+
+  const sorted = [...compared].sort((a, b) => Number(b.count) - Number(a.count) || a.label.localeCompare(b.label));
+  const total = sorted.reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const top = sorted[0];
+  const second = sorted[1];
+  const difference = Number(top.count || 0) - Number(second.count || 0);
+  const comparisonText = difference === 0
+    ? `${top.label} เท่ากับ ${second.label} ที่ ${top.count} คัน`
+    : `${top.label} มากกว่า ${second.label} ${difference} คัน`;
+  const selectedText = sorted.map((item) => `${item.label}: ${item.count}`).join(" | ");
+  summaryCompareOutput.textContent = `Compare ${sorted.length} rows | รวม ${total} คัน | ${comparisonText} | ${selectedText}`;
+}
+
+function summaryScopedLabel(label, scope) {
+  const parts = [];
+  if (scope?.date) {
+    parts.push(scope.date);
+  }
+  if (scope?.cctv_id) {
+    parts.push(scope.cctv_id);
+  }
+  if (scope?.color) {
+    parts.push(scope.color);
+  }
+  if (scope?.start_time && scope?.end_time) {
+    parts.push(`${scope.start_time}-${scope.end_time}`);
+  }
+  return parts.length ? `${label} (${parts.join(", ")})` : label;
+}
+
+function renderSummaryTable(rows, columns, title) {
   summaryTitle.textContent = title;
-  summaryHead.innerHTML = columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("");
+  summaryHead.innerHTML = `${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}<th>Date</th><th>CCTV</th><th>Color</th><th>Start</th><th>End</th><th>Calc</th><th>Scoped</th><th>Compare</th>`;
   summaryRows.innerHTML = "";
   if (!rows.length) {
     const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="${columns.length}">No rows</td>`;
+    row.innerHTML = `<td colspan="${columns.length + 8}">No rows</td>`;
     summaryRows.appendChild(row);
     return;
   }
@@ -1267,9 +1604,399 @@ function renderSummary(rows, columns = summaryTableColumns({}), title = "Current
     .sort((a, b) => Number(b.count) - Number(a.count) || String(a.left || a.name || a.brand || "").localeCompare(String(b.left || b.name || b.brand || "")))
     .forEach((item) => {
     const row = document.createElement("tr");
-    row.innerHTML = columns.map((column) => `<td>${escapeHtml(item[column.key])}</td>`).join("");
+    columns.forEach((column) => {
+      const cell = document.createElement("td");
+      cell.textContent = item[column.key] ?? "";
+      row.appendChild(cell);
+    });
+    const key = summaryRowKey(item, currentSummaryColumns);
+    const scope = ensureSummaryRowScope(key);
+    row.appendChild(summaryRowControlCell(createSummaryScopeSelect(key, "date", summaryMetadata.dates, "เดิม", scope.date)));
+    row.appendChild(summaryRowControlCell(createSummaryScopeSelect(key, "cctv_id", summaryMetadata.cctv_ids, "เดิม", scope.cctv_id)));
+    row.appendChild(summaryRowControlCell(createSummaryScopeSelect(key, "color", summaryMetadata.colors, "ทุกสี", summaryRowDisplayColor(item, currentSummaryMode, scope))));
+    row.appendChild(summaryRowControlCell(createSummaryScopeTimeInput(key, "start_time", scope.start_time)));
+    row.appendChild(summaryRowControlCell(createSummaryScopeTimeInput(key, "end_time", scope.end_time)));
+    const actionCell = document.createElement("td");
+    const actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.className = "secondary compact summary-row-button";
+    actionButton.dataset.summaryRowCalc = key;
+    actionButton.disabled = !summaryRowActionSupported(currentSummaryMode);
+    actionButton.textContent = scope.loading ? "..." : "Calc";
+    actionCell.appendChild(actionButton);
+    row.appendChild(actionCell);
+
+    const resultCell = document.createElement("td");
+    resultCell.className = "summary-row-result";
+    if (scope.error) {
+      resultCell.classList.add("error");
+    }
+    resultCell.textContent = summaryRowResultText(scope);
+    row.appendChild(resultCell);
+
+    const compareCell = document.createElement("td");
+    const compareLabel = document.createElement("label");
+    compareLabel.className = "summary-row-compare-choice";
+    const compareInput = document.createElement("input");
+    compareInput.type = "checkbox";
+    compareInput.className = "summary-row-compare";
+    compareInput.dataset.summaryRowKey = key;
+    compareInput.checked = Boolean(scope.compare);
+    compareInput.disabled = typeof scope.count !== "number" || scope.loading || Boolean(scope.error);
+    const compareText = document.createElement("span");
+    compareText.textContent = "Compare";
+    compareLabel.append(compareInput, compareText);
+    compareCell.appendChild(compareLabel);
+    row.appendChild(compareCell);
     summaryRows.appendChild(row);
   });
+}
+
+function summaryRowControlCell(control) {
+  const cell = document.createElement("td");
+  cell.className = "summary-row-scope-cell";
+  cell.appendChild(control);
+  return cell;
+}
+
+function createSummaryScopeSelect(key, field, values, emptyLabel, value) {
+  const select = document.createElement("select");
+  select.className = "summary-row-scope-control summary-row-scope-select";
+  select.dataset.summaryRowKey = key;
+  select.dataset.summaryScopeField = field;
+  populateSelect(select, values || [], emptyLabel);
+  select.value = value || "";
+  return select;
+}
+
+function summaryRowDisplayColor(item, mode, scope) {
+  if (scope.color) {
+    return scope.color;
+  }
+  if (mode === "color") {
+    return item.name || "";
+  }
+  if (mode === "brand_color") {
+    return item.color || "";
+  }
+  if (mode === "color_type") {
+    return item.left || "";
+  }
+  if (mode === "origin_color") {
+    return item.right || "";
+  }
+  return "";
+}
+
+function createSummaryScopeTimeInput(key, field, value) {
+  const input = document.createElement("input");
+  input.type = "time";
+  input.step = "1";
+  input.className = "summary-row-scope-control summary-row-scope-time";
+  input.dataset.summaryRowKey = key;
+  input.dataset.summaryScopeField = field;
+  input.value = value || "";
+  return input;
+}
+
+function summaryRowResultText(scope) {
+  if (scope.loading) {
+    return "Calculating...";
+  }
+  if (scope.error) {
+    return scope.error;
+  }
+  if (typeof scope.count === "number") {
+    return `${scope.count} คัน (${scope.event_count || 0} detections)`;
+  }
+  if (!summaryRowActionSupported(currentSummaryMode)) {
+    return "ยังไม่รองรับ";
+  }
+  return "-";
+}
+
+function summaryRowActionSupported(mode) {
+  return new Set([
+    "brand",
+    "color",
+    "type",
+    "event",
+    "origin",
+    "brand_color",
+    "origin_brand",
+    "origin_type",
+    "brand_type",
+    "camera_event",
+    "hour_event",
+    "color_type",
+    "origin_color",
+    "unclosed_entry_camera",
+  ]).has(mode);
+}
+
+function defaultSummaryRowScope() {
+  const query = latestResult?.query || {};
+  const scope = selectedSummaryScope();
+  const hasScopedTime = scope.start_time && scope.end_time && !scope.invalidTime;
+  return {
+    date: scope.date || query.date || "",
+    cctv_id: scope.cctv_id || query.cctv_id || "",
+    color: "",
+    start_time: hasScopedTime ? scope.start_time : query.start_time || "",
+    end_time: hasScopedTime ? scope.end_time : query.end_time || "",
+    loading: false,
+    compare: false,
+  };
+}
+
+function ensureSummaryRowScope(key) {
+  if (!summaryRowScopes.has(key)) {
+    summaryRowScopes.set(key, defaultSummaryRowScope());
+  }
+  return summaryRowScopes.get(key);
+}
+
+function pruneSummaryRowScopes() {
+  const availableKeys = new Set(currentSummaryRows.map((row) => summaryRowKey(row, currentSummaryColumns)));
+  summaryRowScopes = new Map([...summaryRowScopes].filter(([key]) => availableKeys.has(key)));
+}
+
+function updateSummaryRowScope(key, field, value) {
+  const scope = { ...ensureSummaryRowScope(key), [field]: value };
+  delete scope.count;
+  delete scope.event_count;
+  delete scope.answer;
+  delete scope.question;
+  scope.error = "";
+  scope.loading = false;
+  scope.compare = false;
+  summaryRowScopes.set(key, scope);
+  renderSummaryFromState(false);
+}
+
+function updateSummaryRowCompare(key, checked) {
+  const scope = { ...ensureSummaryRowScope(key), compare: checked };
+  summaryRowScopes.set(key, scope);
+  updateSummaryComparison();
+}
+
+async function calculateSummaryRow(key) {
+  const item = currentSummaryRows.find((row) => summaryRowKey(row, currentSummaryColumns) === key);
+  if (!item) {
+    return;
+  }
+  const scope = { ...ensureSummaryRowScope(key), loading: false };
+  const scopeError = summaryScopeError(scope, "แถว Summary");
+  if (scopeError) {
+    summaryRowScopes.set(key, { ...scope, error: scopeError, compare: false });
+    renderSummaryFromState(false);
+    return;
+  }
+  const question = buildSummaryRowQuestion(item, currentSummaryMode, scope, { silent: true });
+  if (!question) {
+    summaryRowScopes.set(key, { ...scope, error: "แถวนี้ยังใช้คำนวณต่อไม่ได้", compare: false });
+    renderSummaryFromState(false);
+    return;
+  }
+
+  summaryRowScopes.set(key, { ...scope, loading: true, error: "" });
+  renderSummaryFromState(false);
+  statusPill.textContent = "Summary";
+  try {
+    const response = await fetch("/api/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, use_llm: false }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Summary row query failed");
+    }
+    summaryRowScopes.set(key, {
+      ...scope,
+      loading: false,
+      error: "",
+      count: Number(payload.count ?? 0),
+      event_count: Number(payload.event_count ?? 0),
+      answer: payload.answer || "",
+      question,
+    });
+    statusPill.textContent = "Ready";
+  } catch (error) {
+    summaryRowScopes.set(key, { ...scope, loading: false, error: error.message || "Query failed", compare: false });
+    statusPill.textContent = "Error";
+  } finally {
+    renderSummaryFromState(false);
+  }
+}
+
+function runSummaryRowQuestion(index) {
+  const item = currentSummaryRows[index];
+  if (!item) {
+    return;
+  }
+  const question = buildSummaryRowQuestion(item, currentSummaryMode);
+  if (!question) {
+    return;
+  }
+  submitQuestionOnly = true;
+  pendingSummaryMode = null;
+  questionInput.value = question;
+  form.requestSubmit();
+}
+
+function buildSummaryRowQuestion(item, mode, scope = selectedSummaryScope(), options = {}) {
+  const error = summaryScopeError(scope, "Summary");
+  if (error) {
+    if (!options.silent) {
+      renderError(error);
+    }
+    return "";
+  }
+
+  const query = latestResult?.query || {};
+  const parts = [];
+  const date = scope.date || query.date;
+  const cctvId = scope.cctv_id || query.cctv_id;
+  const startTime = scope.start_time || query.start_time;
+  const endTime = scope.end_time || query.end_time;
+  if (date) {
+    parts.push(`date ${date}`);
+  }
+  if (cctvId) {
+    parts.push(cctvId);
+  }
+  if (startTime && endTime) {
+    parts.push(`from ${startTime} to ${endTime}`);
+  }
+  const rowParts = summaryRowQuestionParts(item, mode, Boolean(startTime && endTime), scope);
+  if (!rowParts.length) {
+    if (!options.silent) {
+      renderError("Summary row นี้ยังใช้เป็น filter ต่อไม่ได้");
+    }
+    return "";
+  }
+  parts.push(...baseSummaryContextParts(query, mode, scope));
+  if (scope.color && !summaryModeHasRowColor(mode)) {
+    parts.push(`color ${scope.color}`);
+  }
+  parts.push(...rowParts);
+  parts.push("vehicles");
+  return parts.filter(Boolean).join(" ");
+}
+
+function summaryScopeError(scope, label) {
+  const startTime = scope.start_time || "";
+  const endTime = scope.end_time || "";
+  if (scope.invalidTime || Boolean(startTime) !== Boolean(endTime)) {
+    return `กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดใน ${label} ให้ครบ หรือปล่อยว่างทั้งคู่`;
+  }
+  return "";
+}
+
+function selectedSummaryScope() {
+  const startTime = summaryScopeStart.value;
+  const endTime = summaryScopeEnd.value;
+  return {
+    date: summaryScopeDate.value,
+    cctv_id: summaryScopeCctv.value,
+    start_time: startTime,
+    end_time: endTime,
+    invalidTime: Boolean(startTime) !== Boolean(endTime),
+  };
+}
+
+function syncSummaryScopeFromQuery(query) {
+  summaryScopeDate.value = query.date || "";
+  summaryScopeCctv.value = query.cctv_id || "";
+  summaryScopeStart.value = query.start_time || "";
+  summaryScopeEnd.value = query.end_time || "";
+}
+
+function baseSummaryContextParts(query, mode, scope = {}) {
+  const parts = [];
+  const queryBrands = Array.isArray(query.brands) && query.brands.length ? query.brands : (query.brand ? [query.brand] : []);
+  if (queryBrands.length && !["brand", "brand_color", "origin_brand", "brand_type", "brand_route"].includes(mode)) {
+    parts.push(`brand ${queryBrands.join(" and ")}`);
+  }
+  const queryColors = Array.isArray(query.colors) && query.colors.length ? query.colors : (query.color ? [query.color] : []);
+  if (!scope.color && queryColors.length && !["color", "brand_color", "color_type", "origin_color"].includes(mode)) {
+    parts.push(`color ${queryColors.join(" and ")}`);
+  }
+  if (query.vehicle_type && !["type", "origin_type", "brand_type", "color_type"].includes(mode)) {
+    parts.push(`type ${query.vehicle_type}`);
+  }
+  if (Array.isArray(query.brand_origins) && query.brand_origins.length && !["origin", "origin_brand", "origin_type", "origin_color"].includes(mode)) {
+    parts.push(`origin ${query.brand_origins.join(" and ")}`);
+  }
+  if (query.event && !["event", "camera_event", "hour_event"].includes(mode)) {
+    parts.push(`event ${query.event}`);
+  }
+  return parts;
+}
+
+function summaryModeHasRowColor(mode) {
+  return ["color", "brand_color", "color_type", "origin_color"].includes(mode);
+}
+
+function summaryRowQuestionParts(item, mode, hasScopedTime = false, scope = {}) {
+  const color = scope.color || "";
+  switch (mode) {
+    case "brand":
+      return [`brand ${item.name}`];
+    case "color":
+      return [`color ${color || item.name}`];
+    case "type":
+      return [`type ${item.name}`];
+    case "event":
+      return [`event ${item.name}`];
+    case "origin":
+      return [`origin ${item.name}`];
+    case "brand_color":
+      return [`brand ${item.brand}`, `color ${color || item.color}`];
+    case "origin_brand":
+      return [`origin ${item.left}`, `brand ${item.right}`];
+    case "origin_type":
+      return [`origin ${item.left}`, `type ${item.right}`];
+    case "brand_type":
+      return [`brand ${item.left}`, `type ${item.right}`];
+    case "camera_event":
+      return [item.left, `event ${item.right}`];
+    case "hour_event":
+      return [hasScopedTime ? "" : `from ${summaryHourStart(item.left)} to ${summaryHourEnd(item.left)}`, `event ${item.right}`].filter(Boolean);
+    case "color_type":
+      return [`color ${color || item.left}`, `type ${item.right}`];
+    case "origin_color":
+      return [`origin ${item.left}`, `color ${color || item.right}`];
+    case "unclosed_entry_camera":
+      return [item.left, "entry without exit"];
+    default:
+      return [];
+  }
+}
+
+function summaryHourStart(label) {
+  const hour = String(label || "").match(/\d{1,2}/)?.[0] || "00";
+  return `${hour.padStart(2, "0")}:00:00`;
+}
+
+function summaryHourEnd(label) {
+  const hour = String(label || "").match(/\d{1,2}/)?.[0] || "00";
+  return `${hour.padStart(2, "0")}:59:59`;
+}
+
+function resetSummaryFilter() {
+  currentSummaryRows = [];
+  currentSummaryColumns = [];
+  currentSummaryMode = "";
+  currentSummaryTitle = "Current breakdown";
+  summaryFilterValues = new Set();
+  summaryRowScopes = new Map();
+  summaryFilterChoices.innerHTML = "";
+  summaryFilterChoices.setAttribute("aria-disabled", "true");
+  clearSummaryFilterButton.disabled = true;
+  summaryFilterTotal.textContent = "Total: 0";
+  updateSummaryComparison();
 }
 
 function renderRoutes(routes) {
@@ -1315,6 +2042,37 @@ function renderBatchRows(rows) {
   });
 }
 
+function renderNotice(message) {
+  latestResult = null;
+  latestBatch = null;
+  latestSql = null;
+  answerOutput.classList.remove("error");
+  answerOutput.textContent = message;
+  jsonOutput.textContent = "{}";
+  csvOutput.textContent = "Question ID,Answer";
+  csvAnswerToolbar.hidden = true;
+  csvAnswerMode.innerHTML = "";
+  csvAnswerMeta.textContent = "";
+  exportCsvButton.disabled = true;
+  countMetric.textContent = "-";
+  eventMetric.textContent = "-";
+  routeMetric.textContent = "-";
+  followUpActions.hidden = true;
+  followUpActions.innerHTML = "";
+  summaryRows.innerHTML = "";
+  summaryOverview.innerHTML = "";
+  summaryTitle.textContent = "Current breakdown";
+  resetSummaryFilter();
+  routeList.textContent = "";
+  batchRows.innerHTML = "";
+  sqlTableSelect.innerHTML = "";
+  sqlTableHead.innerHTML = "";
+  sqlRows.innerHTML = "";
+  sqlOutput.textContent = "";
+  sqlMeta.textContent = "No SQL table";
+  exportSqlCsvButton.disabled = true;
+}
+
 function renderError(message) {
   latestResult = null;
   latestBatch = null;
@@ -1335,6 +2093,7 @@ function renderError(message) {
   summaryRows.innerHTML = "";
   summaryOverview.innerHTML = "";
   summaryTitle.textContent = "Current breakdown";
+  resetSummaryFilter();
   routeList.textContent = "";
   batchRows.innerHTML = "";
   sqlTableSelect.innerHTML = "";

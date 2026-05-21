@@ -1,5 +1,5 @@
 -- Vehicle metadata database for the Jetson Nano CCTV pipeline.
--- Required output contract: Date,CCTV_ID,Timestamp,Brand,Color,Type,Event.
+-- Required output contract: Date,CCTV_ID,First_Seen,Last_Seen,Brand,Color,Type,Event.
 -- SQLite-first design: one compact row per stable vehicle track, sparse support logs, no image blobs.
 
 PRAGMA journal_mode = WAL;
@@ -235,12 +235,13 @@ JOIN runs r ON r.id = vt.run_id;
 
 -- Exact required model/answer export surface.
 -- Use this for CSV export:
---   SELECT Date,CCTV_ID,Timestamp,Brand,Color,Type,Event FROM required_output_view;
+--   SELECT Date,CCTV_ID,First_Seen,Last_Seen,Brand,Color,Type,Event FROM required_output_view;
 CREATE VIEW IF NOT EXISTS required_output_view AS
 SELECT
   COALESCE(substr(vt.first_seen_iso, 1, 10), date(vt.first_seen_ts, 'unixepoch', 'localtime')) AS Date,
   vt.camera_id AS CCTV_ID,
-  COALESCE(vt.first_seen_iso, datetime(vt.first_seen_ts, 'unixepoch', 'localtime')) AS Timestamp,
+  COALESCE(vt.first_seen_iso, datetime(vt.first_seen_ts, 'unixepoch', 'localtime')) AS First_Seen,
+  COALESCE(vt.last_seen_iso, datetime(vt.last_seen_ts, 'unixepoch', 'localtime')) AS Last_Seen,
   COALESCE(vt.brand, 'Unknown') AS Brand,
   COALESCE(vt.color, 'Unknown') AS Color,
   COALESCE(vt.vehicle_type, 'Unknown') AS Type,
