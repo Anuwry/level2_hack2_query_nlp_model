@@ -62,6 +62,19 @@ class BatchCsvTests(unittest.TestCase):
 
         self.assertEqual(response["answers"][0]["csv_answer"], "[Chinese:1, European:1, Japanese:1, Korean:1]")
 
+    def test_answer_batch_questions_outputs_origin_brand_breakdown(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:01:30", "Toyota", "Gray", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:02:30", "Honda", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:03:30", "BYD", "Black", "Car"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,00:00:00 - 00:10:00,vehicles by country and brand\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[(Chinese, BYD):1, (Japanese, Honda):1, (Japanese, Toyota):1]")
+
     def test_answer_batch_questions_outputs_metallic_color_counts(self):
         engine = CCTVQueryEngine(
             [

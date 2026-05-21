@@ -31,12 +31,10 @@ class MockDataTests(unittest.TestCase):
 
         for route in build_vehicle_routes(records):
             events = [record.event for record in route.detections]
-            if len(events) == 1:
-                self.assertEqual(events, ["pass"])
-            else:
-                self.assertEqual(events[0], "entry")
-                self.assertEqual(events[-1], "exit")
-                self.assertTrue(all(event == "pass" for event in events[1:-1]))
+            self.assertGreaterEqual(len(events), 2)
+            self.assertEqual(events[0], "entry")
+            self.assertEqual(events[-1], "exit")
+            self.assertTrue(all(event == "pass" for event in events[1:-1]))
 
 
 if __name__ == "__main__":

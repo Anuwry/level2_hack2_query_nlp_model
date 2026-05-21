@@ -12,6 +12,18 @@ from cctv_query.normalization import normalize_cctv_id, normalize_time
 
 
 DEFAULT_QUESTION_HEADER = "Question ID,CCTV ID,Time Range,Query"
+CROSS_MODES = {
+    "origin_brand",
+    "origin_type",
+    "brand_type",
+    "camera_event",
+    "hour_event",
+    "color_type",
+    "origin_color",
+    "route_od",
+    "brand_route",
+    "unclosed_entry_camera",
+}
 
 
 @dataclass(frozen=True)
@@ -113,6 +125,8 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
     if result.out_of_range:
         return result.answer
 
+    if result.spec.wants_unclosed_entry_count and result.spec.cross_breakdowns:
+        return _format_cross_counts(result, result.spec.cross_breakdowns[0])
     if result.spec.wants_unclosed_entry_count:
         return f"[entry_without_exit:{result.count}]"
     if result.spec.wants_event_breakdown:
@@ -121,6 +135,10 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
         return _format_aggregation_csv(result.aggregation or {})
 
     mode = _answer_mode(query_text)
+    if mode in CROSS_MODES:
+        return _format_cross_counts(result, mode)
+    if mode == "origin_brand":
+        return _format_cross_counts(result, "origin_brand")
     if mode == "brand_color":
         return _format_brand_color_counts(result)
     if mode == "brand":
@@ -144,6 +162,14 @@ def _format_brand_color_counts(result: QueryResult) -> str:
         key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
     )
     return "[" + ", ".join(f"({brand}, {color}):{count}" for (brand, color), count in items) + "]"
+
+
+def _format_cross_counts(result: QueryResult, mode: str) -> str:
+    items = sorted(
+        result.summary.cross_counts.get(mode, Counter()).items(),
+        key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
+    )
+    return "[" + ", ".join(f"({left}, {right}):{count}" for (left, right), count in items) + "]"
 
 
 def _format_named_counts(items) -> str:
@@ -182,7 +208,11 @@ def _answer_mode(query_text: str) -> str:
             "\u0e22\u0e38\u0e42\u0e23\u0e1b",
         )
     )
-    has_type = any(term in normalized for term in ("vehicle type", "vehicle types", "type", "types", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17"))
+    has_type = any(term in normalized for term in ("vehicle type", "vehicle types", "type", "types", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17"))
+    has_camera = any(term in normalized for term in ("camera", "cctv", "\u0e01\u0e25\u0e49\u0e2d\u0e07"))
+    has_hour = any(term in normalized for term in ("hour", "hours", "time", "\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07", "\u0e40\u0e27\u0e25\u0e32"))
+    has_route = any(term in normalized for term in ("route", "path", "\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e40\u0e14\u0e34\u0e19\u0e17\u0e32\u0e07"))
+    has_start_end = any(term in normalized for term in ("start", "end", "origin destination", "od", "from", "to", "\u0e15\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07", "\u0e08\u0e32\u0e01", "\u0e44\u0e1b"))
     has_event = any(term in normalized for term in ("event", "events", "\u0e2a\u0e16\u0e32\u0e19\u0e30"))
     has_event_word = any(
         re.search(pattern, normalized)
@@ -195,6 +225,24 @@ def _answer_mode(query_text: str) -> str:
             r"\bpassing\b",
         )
     )
+    if has_origin and has_brand:
+        return "origin_brand"
+    if has_origin and has_type:
+        return "origin_type"
+    if has_brand and has_type:
+        return "brand_type"
+    if has_camera and (has_event or has_event_word):
+        return "camera_event"
+    if has_hour and (has_event or has_event_word):
+        return "hour_event"
+    if has_color and has_type:
+        return "color_type"
+    if has_origin and has_color:
+        return "origin_color"
+    if has_route and has_start_end:
+        return "route_od"
+    if has_brand and has_route:
+        return "brand_route"
     if has_brand and has_color:
         return "brand_color"
     if has_brand:

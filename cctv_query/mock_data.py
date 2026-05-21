@@ -27,8 +27,6 @@ CORRIDORS = (
     ("CCTV07", "CCTV06", "CCTV05"),
 )
 
-PASS_ONLY_CAMERAS = ("CCTV02", "CCTV05", "CCTV06")
-
 TYPE_WEIGHTS = (
     ("Car", 64),
     ("Motorcycle", 18),
@@ -97,8 +95,8 @@ def generate_rows(
     start_date: date = date(2026, 5, 10),
     days: int = 5,
 ) -> list[dict[str, str]]:
-    if total_rows <= 0:
-        raise ValueError("total_rows must be greater than zero.")
+    if total_rows < 2:
+        raise ValueError("total_rows must be at least 2 because routes need entry and exit detections.")
     if days <= 0:
         raise ValueError("days must be greater than zero.")
 
@@ -109,7 +107,7 @@ def generate_rows(
 
     while len(rows) < total_rows:
         remaining = total_rows - len(rows)
-        route = _weighted_choice([item for item in route_templates if len(item[0]) <= remaining], rng)
+        route = _weighted_choice(_eligible_route_templates(route_templates, remaining), rng)
         offsets = _route_offsets(route, rng)
         current_date, vehicle_type, brand, color, start_seconds = _scheduled_vehicle(
             rng,
@@ -155,14 +153,21 @@ def _route_templates() -> tuple[tuple[tuple[str, ...], int], ...]:
                 route = corridor[start:end]
                 weight = 8 if len(route) == len(corridor) else 4
                 templates.append((route, weight))
-    for camera in PASS_ONLY_CAMERAS:
-        templates.append(((camera,), 10))
     return tuple(templates)
 
 
+def _eligible_route_templates(
+    route_templates: tuple[tuple[tuple[str, ...], int], ...],
+    remaining_rows: int,
+) -> list[tuple[tuple[str, ...], int]]:
+    return [
+        item
+        for item in route_templates
+        if len(item[0]) <= remaining_rows and remaining_rows - len(item[0]) != 1
+    ]
+
+
 def _event_for_route_position(index: int, route_length: int) -> str:
-    if route_length == 1:
-        return "pass"
     if index == 0:
         return "entry"
     if index == route_length - 1:

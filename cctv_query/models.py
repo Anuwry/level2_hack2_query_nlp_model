@@ -15,6 +15,7 @@ class CCTVRecord:
     color: str
     vehicle_type: str
     event: str = "pass"
+    event_explicit: bool = False
 
     @classmethod
     def from_values(
@@ -25,7 +26,7 @@ class CCTVRecord:
         brand: str,
         color: str,
         vehicle_type: str,
-        event: str = "pass",
+        event: str | None = None,
     ) -> "CCTVRecord":
         from cctv_query.normalization import (
             normalize_cctv_id,
@@ -36,6 +37,7 @@ class CCTVRecord:
         )
 
         normalized_time = normalize_time(timestamp)
+        event_text = event.strip() if event is not None else ""
         return cls(
             date=normalize_date(date),
             cctv_id=normalize_cctv_id(cctv_id),
@@ -44,7 +46,8 @@ class CCTVRecord:
             brand=brand.strip(),
             color=color.strip(),
             vehicle_type=vehicle_type.strip(),
-            event=normalize_event(event),
+            event=normalize_event(event_text or "pass"),
+            event_explicit=bool(event_text),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -70,6 +73,8 @@ class QuerySpec:
     events: tuple[str, ...] = ()
     wants_brand_color_breakdown: bool = False
     wants_origin_breakdown: bool = False
+    wants_origin_brand_breakdown: bool = False
+    cross_breakdowns: tuple[str, ...] = ()
     wants_route: bool = False
     wants_vehicle_list: bool = False
     wants_distinct_vehicle_count: bool = False
@@ -93,6 +98,8 @@ class QuerySummary:
     brand_counts: Counter[str]
     color_counts: Counter[str]
     origin_counts: Counter[str]
+    origin_brand_counts: Counter[tuple[str, str]]
+    cross_counts: dict[str, Counter[tuple[str, str]]]
     type_counts: Counter[str]
     event_counts: Counter[str]
     event_count: int
@@ -109,6 +116,17 @@ class QuerySummary:
             "brand_counts": dict(self.brand_counts),
             "color_counts": dict(self.color_counts),
             "origin_counts": dict(self.origin_counts),
+            "origin_brand_counts": [
+                {"origin": origin, "brand": brand, "count": count}
+                for (origin, brand), count in self.origin_brand_counts.items()
+            ],
+            "cross_counts": {
+                name: [
+                    {"left": left, "right": right, "count": count}
+                    for (left, right), count in counter.items()
+                ]
+                for name, counter in self.cross_counts.items()
+            },
             "type_counts": dict(self.type_counts),
             "event_counts": dict(self.event_counts),
         }

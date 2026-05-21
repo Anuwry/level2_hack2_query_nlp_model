@@ -221,6 +221,47 @@ button.compact {
   font-size: 13px;
 }
 
+.quick-panel {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 14px;
+}
+
+.quick-panel .section-title {
+  justify-content: flex-start;
+  margin-bottom: 9px;
+}
+
+.quick-panel .section-title h2 {
+  display: block;
+  margin: 0;
+  font-size: 14px;
+}
+
+.quick-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.quick-chip {
+  min-height: 32px;
+  border-color: var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.quick-chip:hover {
+  border-color: #b8c3bd;
+  background: #eef4f1;
+  color: var(--accent-strong);
+}
+
 .tool-panel {
   border-top: 1px solid var(--line);
   margin-top: 18px;
@@ -298,6 +339,29 @@ button.compact {
   margin-bottom: 10px;
 }
 
+.follow-up-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+.follow-up-actions[hidden] {
+  display: none;
+}
+
+.follow-up-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  margin-right: 2px;
+}
+
 .tab-button {
   min-width: auto;
   min-height: 34px;
@@ -323,6 +387,52 @@ button.compact {
 
 .tab-panel.active {
   display: block;
+}
+
+.summary-overview {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+}
+
+.summary-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--soft);
+  padding: 10px;
+}
+
+.summary-card h3 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.summary-card ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.summary-card li {
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+}
+
+.summary-heading h2 {
+  margin: 0;
+  font-size: 14px;
 }
 
 pre {
@@ -524,6 +634,10 @@ code {
   .metric-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .summary-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 620px) {
@@ -538,6 +652,7 @@ code {
   }
 
   .metric-strip,
+  .summary-overview,
   .sql-toolbar {
     grid-template-columns: 1fr;
   }

@@ -167,6 +167,14 @@ def parse_question(
         event = None
     wants_brand_color_breakdown = _wants_brand_color_breakdown(text)
     wants_origin_breakdown = _wants_origin_breakdown(text)
+    wants_origin_brand_breakdown = _wants_origin_brand_breakdown(text)
+    cross_breakdowns = _extract_cross_breakdowns(text)
+    if wants_origin_brand_breakdown:
+        wants_origin_breakdown = True
+        cross_breakdowns = _append_tuple_unique(cross_breakdowns, "origin_brand")
+    if "route_od" in cross_breakdowns or "brand_route" in cross_breakdowns:
+        wants_peak_camera = False
+        wants_camera_breakdown = False
     wants_route = _wants_route(text)
     wants_vehicle_list = _wants_vehicle_list(text)
     wants_distinct_vehicle_count = _wants_distinct_vehicle_count(text)
@@ -190,6 +198,8 @@ def parse_question(
         events=events,
         wants_brand_color_breakdown=wants_brand_color_breakdown,
         wants_origin_breakdown=wants_origin_breakdown,
+        wants_origin_brand_breakdown=wants_origin_brand_breakdown,
+        cross_breakdowns=cross_breakdowns,
         wants_route=wants_route,
         wants_vehicle_list=wants_vehicle_list,
         wants_distinct_vehicle_count=wants_distinct_vehicle_count,
@@ -559,6 +569,7 @@ def _wants_origin_breakdown(text: str) -> bool:
         "per country",
         "per origin",
         "breakdown",
+        "\u0e15\u0e32\u0e21",
         "\u0e41\u0e22\u0e01",
         "\u0e41\u0e22\u0e01\u0e15\u0e32\u0e21",
         "\u0e41\u0e15\u0e48\u0e25\u0e30",
@@ -566,6 +577,79 @@ def _wants_origin_breakdown(text: str) -> bool:
     if any(term in compact_text for term in origin_terms) and any(term in compact_text for term in breakdown_terms):
         return True
     return bool(_extract_brand_origins(text)) and any(term in compact_text for term in breakdown_terms)
+
+
+def _wants_origin_brand_breakdown(text: str) -> bool:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    origin_terms = (
+        "country",
+        "countries",
+        "origin",
+        "region",
+        "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28",
+        "\u0e2a\u0e31\u0e0d\u0e0a\u0e32\u0e15\u0e34",
+    )
+    brand_terms = ("brand", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d")
+    return any(term in compact_text for term in origin_terms) and any(term in compact_text for term in brand_terms)
+
+
+def _extract_cross_breakdowns(text: str) -> tuple[str, ...]:
+    compact_text = re.sub(r"\s+", " ", text.casefold())
+    has_origin = _has_any_term(compact_text, _ORIGIN_BREAKDOWN_TERMS)
+    has_brand = _has_any_term(compact_text, ("brand", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d"))
+    has_type = _has_any_term(compact_text, ("vehicle type", "vehicle types", "type", "types", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17"))
+    has_camera = _has_any_term(compact_text, ("camera", "cctv", "\u0e01\u0e25\u0e49\u0e2d\u0e07"))
+    has_event = _has_any_term(compact_text, ("event", "events", "status", "entry", "exit", "pass", "\u0e2a\u0e16\u0e32\u0e19\u0e30", "\u0e40\u0e02\u0e49\u0e32", "\u0e2d\u0e2d\u0e01", "\u0e1c\u0e48\u0e32\u0e19"))
+    has_hour = _has_any_term(compact_text, ("hour", "hours", "time", "\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07", "\u0e40\u0e27\u0e25\u0e32"))
+    has_color = _has_any_term(compact_text, ("color", "colour", "\u0e2a\u0e35"))
+    has_route = _has_any_term(compact_text, ("route", "path", "\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e40\u0e14\u0e34\u0e19\u0e17\u0e32\u0e07"))
+    has_start_end = _has_any_term(compact_text, ("start", "end", "origin destination", "od", "from", "to", "\u0e15\u0e49\u0e19\u0e17\u0e32\u0e07", "\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07", "\u0e08\u0e32\u0e01", "\u0e44\u0e1b"))
+    has_breakdown = _has_any_term(compact_text, ("by", "per", "breakdown", "cross", "\u0e15\u0e32\u0e21", "\u0e41\u0e22\u0e01", "\u0e41\u0e15\u0e48\u0e25\u0e30"))
+
+    values: tuple[str, ...] = ()
+    if has_origin and has_brand and has_breakdown:
+        values = _append_tuple_unique(values, "origin_brand")
+    if has_origin and has_type and has_breakdown:
+        values = _append_tuple_unique(values, "origin_type")
+    if has_brand and has_type and has_breakdown:
+        values = _append_tuple_unique(values, "brand_type")
+    if has_camera and has_event and has_breakdown and not _wants_unclosed_entry_count(text):
+        values = _append_tuple_unique(values, "camera_event")
+    if has_hour and has_event and has_breakdown:
+        values = _append_tuple_unique(values, "hour_event")
+    if has_color and has_type and has_breakdown:
+        values = _append_tuple_unique(values, "color_type")
+    if has_origin and has_color and has_breakdown:
+        values = _append_tuple_unique(values, "origin_color")
+    if has_route and has_start_end:
+        values = _append_tuple_unique(values, "route_od")
+    if has_brand and has_route and has_breakdown:
+        values = _append_tuple_unique(values, "brand_route")
+    if _wants_unclosed_entry_count(text) and has_camera and has_breakdown:
+        values = _append_tuple_unique(values, "unclosed_entry_camera")
+    return values
+
+
+_ORIGIN_BREAKDOWN_TERMS = (
+    "country",
+    "countries",
+    "origin",
+    "region",
+    "nationality",
+    "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28",
+    "\u0e2a\u0e31\u0e0d\u0e0a\u0e32\u0e15\u0e34",
+    "\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e01\u0e33\u0e40\u0e19\u0e34\u0e14",
+)
+
+
+def _has_any_term(text: str, terms: tuple[str, ...]) -> bool:
+    return any(term in text for term in terms)
+
+
+def _append_tuple_unique(values: tuple[str, ...], value: str) -> tuple[str, ...]:
+    if value in values:
+        return values
+    return (*values, value)
 
 
 def _wants_route(text: str) -> bool:

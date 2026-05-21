@@ -15,20 +15,20 @@ def make_records():
         CCTVRecord.from_values("10-05-2026", "CCTV10", "00:46:01", "Toyota", "Silver", "Car"),
         CCTVRecord.from_values("10-05-2026", "CCTV10", "00:51:20", "Isuzu", "Black", "Truck"),
         CCTVRecord.from_values("10-05-2026", "CCTV10", "00:54:59", "Honda", "White", "Car"),
-        CCTVRecord.from_values("12-05-2026", "CCTV09", "22:27:13", "Toyota", "Red", "Car"),
-        CCTVRecord.from_values("12-05-2026", "CCTV08", "22:29:56", "Toyota", "Red", "Car"),
-        CCTVRecord.from_values("12-05-2026", "CCTV07", "22:30:56", "Toyota", "Red", "Car"),
-        CCTVRecord.from_values("12-05-2026", "CCTV04", "22:34:20", "Toyota", "Red", "Car"),
+        CCTVRecord.from_values("12-05-2026", "CCTV09", "22:27:13", "Toyota", "Red", "Car", event="entry"),
+        CCTVRecord.from_values("12-05-2026", "CCTV08", "22:29:56", "Toyota", "Red", "Car", event="pass"),
+        CCTVRecord.from_values("12-05-2026", "CCTV07", "22:30:56", "Toyota", "Red", "Car", event="pass"),
+        CCTVRecord.from_values("12-05-2026", "CCTV04", "22:34:20", "Toyota", "Red", "Car", event="exit"),
         CCTVRecord.from_values("12-05-2026", "CCTV07", "08:10:00", "Toyota", "Red", "Car"),
         CCTVRecord.from_values("12-05-2026", "CCTV07", "09:00:00", "Honda", "Red", "Motorcycle"),
         CCTVRecord.from_values("12-05-2026", "CCTV07", "10:30:00", "Isuzu", "Red", "Truck"),
         CCTVRecord.from_values("12-05-2026", "CCTV07", "11:00:00", "Nissan", "Red-White", "Car"),
         CCTVRecord.from_values("12-05-2026", "CCTV07", "11:15:00", "MG", "Metallic Green", "Car"),
-        CCTVRecord.from_values("12-05-2026", "CCTV04", "12:00:00", "Mercedes-Benz", "Red", "Bus"),
-        CCTVRecord.from_values("12-05-2026", "CCTV07", "12:03:00", "Mercedes-Benz", "Red", "Bus"),
-        CCTVRecord.from_values("12-05-2026", "CCTV08", "12:05:00", "Mercedes-Benz", "Red", "Bus"),
-        CCTVRecord.from_values("12-05-2026", "CCTV09", "13:00:00", "Mercedes-Benz", "Dark Green", "Bus"),
-        CCTVRecord.from_values("12-05-2026", "CCTV08", "13:02:00", "Mercedes-Benz", "Dark Green", "Bus"),
+        CCTVRecord.from_values("12-05-2026", "CCTV04", "12:00:00", "Mercedes-Benz", "Red", "Bus", event="entry"),
+        CCTVRecord.from_values("12-05-2026", "CCTV07", "12:03:00", "Mercedes-Benz", "Red", "Bus", event="pass"),
+        CCTVRecord.from_values("12-05-2026", "CCTV08", "12:05:00", "Mercedes-Benz", "Red", "Bus", event="exit"),
+        CCTVRecord.from_values("12-05-2026", "CCTV09", "13:00:00", "Mercedes-Benz", "Dark Green", "Bus", event="entry"),
+        CCTVRecord.from_values("12-05-2026", "CCTV08", "13:02:00", "Mercedes-Benz", "Dark Green", "Bus", event="exit"),
         CCTVRecord.from_values("12-05-2026", "CCTV01", "15:00:00", "Mazda", "Blue", "Car"),
         CCTVRecord.from_values("12-05-2026", "CCTV01", "15:05:00", "Yamaha", "Blue", "Motorcycle"),
         CCTVRecord.from_values("12-05-2026", "CCTV02", "16:00:00", "Mazda", "Red-White", "Car"),
@@ -196,6 +196,23 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(result.routes[0].path, ["CCTV09", "CCTV08", "CCTV07", "CCTV04"])
         self.assertIn("CCTV09 -> CCTV08 -> CCTV07 -> CCTV04", result.answer)
         self.assertIn("22:27:13-22:34:20", result.answer)
+
+    def test_route_answer_does_not_count_pass_only_orphans_as_routes(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Hino", "Black", "Bus", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:03:00", "Hino", "Black", "Bus", event="pass"),
+                CCTVRecord.from_values("12-05-2026", "CCTV03", "08:05:00", "Hino", "Black", "Bus", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV05", "10:00:00", "Hino", "Black", "Bus", event="pass"),
+            ]
+        )
+
+        result = engine.ask("day 12 bus route")
+
+        self.assertEqual(result.count, 1)
+        self.assertEqual(len(result.routes), 1)
+        self.assertEqual(result.event_count, 3)
+        self.assertEqual(result.routes[0].path, ["CCTV01", "CCTV02", "CCTV03"])
 
     def test_spaced_date_and_brand_alias_do_not_fall_back_to_all_records(self):
         result = self.engine.ask("12 05 2026 มี Benz เข้าออกกี่คันแล้วมีสีอะไรบ้าง")
@@ -500,6 +517,50 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(result.summary.origin_counts["Korean"], 1)
         self.assertEqual(result.summary.origin_counts["American"], 1)
         self.assertIn("Origin breakdown: American:1, Chinese:1, European:1, Japanese:1, Korean:1", result.answer)
+
+    def test_origin_brand_breakdown_answer_and_summary(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "BYD", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "11:00:00", "BMW", "Black", "Car"),
+            ]
+        )
+
+        result = engine.ask("รถทั้งหมดตามประเทศและยี่ห้อ")
+
+        self.assertTrue(result.spec.wants_origin_brand_breakdown)
+        self.assertEqual(result.summary.origin_brand_counts[("Japanese", "Toyota")], 1)
+        self.assertEqual(result.summary.origin_brand_counts[("Japanese", "Honda")], 1)
+        self.assertIn("สรุปตามประเทศ/ยี่ห้อ:", result.answer)
+        self.assertIn("Japanese Honda 1 คัน", result.answer)
+        self.assertNotIn("ยี่ห้อ/สีที่พบ", result.answer)
+
+    def test_supported_cross_breakdowns_use_expected_count_sources(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:03:00", "Toyota", "Red", "Car", event="pass"),
+                CCTVRecord.from_values("12-05-2026", "CCTV03", "08:05:00", "Toyota", "Red", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "BYD", "White", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV03", "09:05:00", "BYD", "White", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV04", "10:00:00", "Hino", "Black", "Truck", event="entry"),
+            ]
+        )
+
+        origin_type = engine.ask("vehicles by country and type")
+        camera_event = engine.ask("vehicles by camera and event")
+        route_od = engine.ask("vehicles by route start and end")
+        brand_route = engine.ask("vehicles by brand and route")
+        unclosed = engine.ask("entry without exit by camera")
+
+        self.assertEqual(origin_type.summary.cross_counts["origin_type"][("Japanese", "Car")], 1)
+        self.assertEqual(origin_type.summary.cross_counts["origin_type"][("Chinese", "Car")], 1)
+        self.assertEqual(camera_event.summary.cross_counts["camera_event"][("CCTV02", "pass")], 1)
+        self.assertEqual(route_od.summary.cross_counts["route_od"][("CCTV01", "CCTV03")], 2)
+        self.assertEqual(brand_route.summary.cross_counts["brand_route"][("Toyota", "CCTV01 -> CCTV02 -> CCTV03")], 1)
+        self.assertEqual(unclosed.summary.cross_counts["unclosed_entry_camera"][("CCTV04", "entry_without_exit")], 1)
 
     def test_metallic_color_filter_uses_bronze_silver_gold(self):
         engine = CCTVQueryEngine(

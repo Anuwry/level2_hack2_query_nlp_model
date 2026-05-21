@@ -5,7 +5,7 @@ from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
-from cctv_query.classification import brand_matches_any_origin, origin_counts
+from cctv_query.classification import brand_matches_any_origin, brand_region, origin_counts
 from cctv_query.csv_store import load_records
 from cctv_query.models import CCTVRecord, QueryResult, QuerySpec, QuerySummary, VehicleRoute
 from cctv_query.parser import parse_question
@@ -81,7 +81,11 @@ class CCTVQueryEngine:
 
         warnings = tuple(self.query_warnings(spec))
         matches = self.filter_records(spec)
-        if spec.wants_peak_hour or spec.wants_hour_breakdown:
+        if (
+            (spec.wants_peak_hour or spec.wants_hour_breakdown)
+            and not spec.wants_unclosed_entry_count
+            and not spec.cross_breakdowns
+        ):
             aggregation = aggregate_records(matches, "hour")
             return QueryResult(
                 spec=spec,
@@ -95,7 +99,11 @@ class CCTVQueryEngine:
                 aggregation=aggregation,
             )
 
-        if spec.wants_peak_camera or spec.wants_camera_breakdown:
+        if (
+            (spec.wants_peak_camera or spec.wants_camera_breakdown)
+            and not spec.wants_unclosed_entry_count
+            and not spec.cross_breakdowns
+        ):
             aggregation = aggregate_records(matches, "camera")
             return QueryResult(
                 spec=spec,
@@ -110,7 +118,7 @@ class CCTVQueryEngine:
             )
 
         if spec.wants_unclosed_entry_count:
-            all_routes = build_vehicle_routes(matches)
+            all_routes = countable_vehicle_routes(matches, spec)
             routes = routes_with_entry_without_exit(all_routes)
             summary = summarize_routes(routes)
             answer = format_answer(spec, summary, routes=routes)
@@ -143,8 +151,9 @@ class CCTVQueryEngine:
                 answer_options=tuple(self.answer_options(spec)),
             )
 
-        routes = build_vehicle_routes(matches)
-        if spec.wants_event_breakdown:
+        routes = countable_vehicle_routes(matches, spec)
+        route_matches = [record for route in routes for record in route.detections]
+        if spec.wants_event_breakdown or _needs_detection_cross_summary(spec):
             summary = summarize(matches)
         elif spec.wants_distinct_vehicle_count:
             summary = summarize_routes(routes)
@@ -154,7 +163,7 @@ class CCTVQueryEngine:
         clarifications = tuple(self.optional_clarifications(spec))
         return QueryResult(
             spec=spec,
-            matches=matches,
+            matches=matches if spec.wants_event_breakdown or _needs_detection_cross_summary(spec) else route_matches,
             routes=routes,
             summary=summary,
             answer=answer,
@@ -257,7 +266,7 @@ class CCTVQueryEngine:
     def _count_for_colors(self, spec: QuerySpec, colors: tuple[str, ...]) -> int:
         option_spec = replace(spec, color=colors[0] if colors else None, colors=colors)
         matches = self.filter_records(option_spec)
-        routes = build_vehicle_routes(matches)
+        routes = countable_vehicle_routes(matches, option_spec)
         if spec.wants_distinct_vehicle_count:
             return summarize_routes(routes).unique_vehicle_count
         return summarize_routes(routes).unique_vehicle_count
@@ -266,7 +275,7 @@ class CCTVQueryEngine:
         return [
             route
             for route in build_vehicle_routes(self.records)
-            if any(_matches(record, spec) for record in route.detections)
+            if _route_matches_spec(route, spec)
         ]
 
     def answer_options(self, spec: QuerySpec) -> list[dict]:
@@ -325,6 +334,10 @@ def is_unrecognized_query(spec: QuerySpec) -> bool:
     return not _looks_like_broad_vehicle_query(spec.raw_question)
 
 
+def _needs_detection_cross_summary(spec: QuerySpec) -> bool:
+    return any(name in {"camera_event", "hour_event"} for name in spec.cross_breakdowns)
+
+
 def _has_any_structured_constraint(spec: QuerySpec) -> bool:
     return any(
         (
@@ -341,6 +354,8 @@ def _has_any_structured_constraint(spec: QuerySpec) -> bool:
             spec.events,
             spec.wants_brand_color_breakdown,
             spec.wants_origin_breakdown,
+            spec.wants_origin_brand_breakdown,
+            spec.cross_breakdowns,
             spec.wants_route,
             spec.wants_vehicle_list,
             spec.wants_distinct_vehicle_count,
@@ -392,6 +407,8 @@ def summarize(records: list[CCTVRecord], event_count: int | None = None) -> Quer
         brand_counts=Counter(record.brand for record in records),
         color_counts=Counter(record.color for record in records),
         origin_counts=origin_counts(records),
+        origin_brand_counts=_origin_brand_counts(records),
+        cross_counts=_record_cross_counts(records),
         type_counts=Counter(record.vehicle_type for record in records),
         event_counts=Counter(record.event for record in records),
         event_count=len(records) if event_count is None else event_count,
@@ -399,9 +416,70 @@ def summarize(records: list[CCTVRecord], event_count: int | None = None) -> Quer
     )
 
 
+def _origin_brand_counts(records: list[CCTVRecord]) -> Counter[tuple[str, str]]:
+    counts: Counter[tuple[str, str]] = Counter()
+    for record in records:
+        origin = brand_region(record.brand)
+        if origin:
+            counts[(origin, record.brand)] += 1
+    return counts
+
+
+def _record_cross_counts(records: list[CCTVRecord]) -> dict[str, Counter[tuple[str, str]]]:
+    counts: dict[str, Counter[tuple[str, str]]] = {
+        "origin_brand": Counter(),
+        "origin_type": Counter(),
+        "brand_type": Counter(),
+        "camera_event": Counter(),
+        "hour_event": Counter(),
+        "color_type": Counter(),
+        "origin_color": Counter(),
+    }
+    for record in records:
+        origin = brand_region(record.brand)
+        hour = record.timestamp[:2]
+        if origin:
+            counts["origin_brand"][(origin, record.brand)] += 1
+            counts["origin_type"][(origin, record.vehicle_type)] += 1
+            counts["origin_color"][(origin, record.color)] += 1
+        counts["brand_type"][(record.brand, record.vehicle_type)] += 1
+        counts["camera_event"][(record.cctv_id, record.event)] += 1
+        counts["hour_event"][(f"{hour}:00-{hour}:59", record.event)] += 1
+        counts["color_type"][(record.color, record.vehicle_type)] += 1
+    return counts
+
+
 def summarize_routes(routes: list[VehicleRoute]) -> QuerySummary:
     representatives = [route.representative for route in routes]
-    return summarize(representatives, event_count=sum(route.event_count for route in routes))
+    summary = summarize(representatives, event_count=sum(route.event_count for route in routes))
+    return replace(summary, cross_counts={**summary.cross_counts, **_route_cross_counts(routes)})
+
+
+def _route_cross_counts(routes: list[VehicleRoute]) -> dict[str, Counter[tuple[str, str]]]:
+    counts: dict[str, Counter[tuple[str, str]]] = {
+        "route_od": Counter(),
+        "brand_route": Counter(),
+        "unclosed_entry_camera": Counter(),
+    }
+    for route in routes:
+        if not route.detections:
+            continue
+        origin = route.path[0]
+        destination = route.path[-1]
+        path = _route_path(route)
+        counts["route_od"][(origin, destination)] += 1
+        counts["brand_route"][(route.representative.brand, path)] += 1
+        if _route_has_entry_without_exit(route):
+            entry_record = next((record for record in route.detections if record.event == "entry"), route.representative)
+            counts["unclosed_entry_camera"][(entry_record.cctv_id, "entry_without_exit")] += 1
+    return counts
+
+
+def countable_vehicle_routes(records: list[CCTVRecord], spec: QuerySpec) -> list[VehicleRoute]:
+    routes = build_vehicle_routes(records)
+    if _keeps_pass_only_routes(spec):
+        return routes
+    return [route for route in routes if _is_countable_vehicle_route(route)]
 
 
 def aggregate_records(records: list[CCTVRecord], group_by: str) -> dict:
@@ -458,9 +536,34 @@ def routes_with_entry_without_exit(routes: list[VehicleRoute]) -> list[VehicleRo
     return [
         route
         for route in routes
-        if any(record.event == "entry" for record in route.detections)
-        and not any(record.event == "exit" for record in route.detections)
+        if _route_has_entry_without_exit(route)
     ]
+
+
+def _route_has_entry_without_exit(route: VehicleRoute) -> bool:
+    return any(record.event == "entry" for record in route.detections) and not any(
+        record.event == "exit" for record in route.detections
+    )
+
+
+def _route_matches_spec(route: VehicleRoute, spec: QuerySpec) -> bool:
+    if not _keeps_pass_only_routes(spec) and not _is_countable_vehicle_route(route):
+        return False
+    return any(_matches(record, spec) for record in route.detections)
+
+
+def _keeps_pass_only_routes(spec: QuerySpec) -> bool:
+    return bool(spec.cctv_id) or spec.event == "pass" or spec.events == ("pass",)
+
+
+def _has_boundary_event(route: VehicleRoute) -> bool:
+    return any(record.event in {"entry", "exit"} for record in route.detections)
+
+
+def _is_countable_vehicle_route(route: VehicleRoute) -> bool:
+    if _has_boundary_event(route):
+        return True
+    return not any(record.event_explicit for record in route.detections)
 
 
 def summarize_distinct_vehicle_identities(routes: list[VehicleRoute]) -> QuerySummary:
@@ -661,7 +764,9 @@ def _format_thai_answer(spec: QuerySpec, summary: QuerySummary, routes: list[Veh
     if spec.wants_unclosed_entry_count:
         if count == 0:
             return f"ไม่พบรถที่ entry แล้วไม่ exit สำหรับ {context}"
-        return f"พบรถที่ entry แล้วไม่ exit {count} คันสำหรับ {context}{_thai_count_note(spec, summary, routes)}"
+        lines = [f"พบรถที่ entry แล้วไม่ exit {count} คันสำหรับ {context}{_thai_count_note(spec, summary, routes)}"]
+        lines.extend(_format_thai_cross_breakdowns(spec, summary))
+        return "\n".join(lines)
     if count == 0:
         return f"ไม่พบข้อมูลที่ตรงกับเงื่อนไข: {context}"
 
@@ -670,8 +775,9 @@ def _format_thai_answer(spec: QuerySpec, summary: QuerySummary, routes: list[Veh
     if spec.vehicle_type:
         lines[0] = f"พบ{vehicle_label} {count}{count_label}สำหรับ {context}{_thai_count_note(spec, summary, routes)}"
 
-    if spec.wants_brand_color_breakdown:
+    if spec.wants_brand_color_breakdown and not spec.cross_breakdowns:
         lines.append("ยี่ห้อ/สีที่พบ: " + _format_brand_color_items(summary, unit="คัน"))
+    lines.extend(_format_thai_cross_breakdowns(spec, summary))
     if spec.wants_origin_breakdown:
         lines.append("\u0e2a\u0e23\u0e38\u0e1b\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28/\u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04: " + _format_origin_counts(spec, summary))
     if spec.wants_event_breakdown:
@@ -691,14 +797,17 @@ def _format_english_answer(spec: QuerySpec, summary: QuerySummary, routes: list[
     if spec.wants_unclosed_entry_count:
         if count == 0:
             return f"No vehicles with entry and no exit for {context}."
-        return f"Found {count} vehicles with entry and no exit for {context}{_english_count_note(spec, summary, routes)}."
+        lines = [f"Found {count} vehicles with entry and no exit for {context}{_english_count_note(spec, summary, routes)}."]
+        lines.extend(_format_english_cross_breakdowns(spec, summary))
+        return "\n".join(lines)
     if count == 0:
         return f"No matching records for {context}."
 
     vehicle_word = _english_vehicle_word(spec.vehicle_type, count)
     lines = [f"Found {count} {vehicle_word} for {context}{_english_count_note(spec, summary, routes)}."]
-    if spec.wants_brand_color_breakdown:
+    if spec.wants_brand_color_breakdown and not spec.cross_breakdowns:
         lines.append("Brand/color breakdown: " + _format_brand_color_items(summary, unit=""))
+    lines.extend(_format_english_cross_breakdowns(spec, summary))
     if spec.wants_origin_breakdown:
         lines.append("Origin breakdown: " + _format_origin_counts(spec, summary))
     if spec.wants_event_breakdown:
@@ -720,6 +829,66 @@ def _format_brand_color_items(summary: QuerySummary, unit: str) -> str:
     if unit:
         return ", ".join(f"{brand} {color} {count} {unit}" for (brand, color), count in sorted_items)
     return ", ".join(f"{brand} {color} {count}" for (brand, color), count in sorted_items)
+
+
+def _format_origin_brand_items(summary: QuerySummary, unit: str) -> str:
+    sorted_items = sorted(
+        summary.origin_brand_counts.items(),
+        key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()),
+    )
+    if unit:
+        return ", ".join(f"{origin} {brand} {count} {unit}" for (origin, brand), count in sorted_items)
+    return ", ".join(f"{origin} {brand} {count}" for (origin, brand), count in sorted_items)
+
+
+THAI_CROSS_LABELS = {
+    "origin_brand": "สรุปตามประเทศ/ยี่ห้อ",
+    "origin_type": "สรุปตามประเทศ/ประเภทรถ",
+    "brand_type": "สรุปตามยี่ห้อ/ประเภทรถ",
+    "camera_event": "สรุปตามกล้อง/event",
+    "hour_event": "สรุปตามชั่วโมง/event",
+    "color_type": "สรุปตามสี/ประเภทรถ",
+    "origin_color": "สรุปตามประเทศ/สี",
+    "route_od": "สรุปตามกล้องต้นทาง/ปลายทาง",
+    "brand_route": "สรุปตามยี่ห้อ/เส้นทาง",
+    "unclosed_entry_camera": "รถ entry แล้วไม่ exit ตามกล้อง entry",
+}
+
+ENGLISH_CROSS_LABELS = {
+    "origin_brand": "Origin/brand breakdown",
+    "origin_type": "Origin/type breakdown",
+    "brand_type": "Brand/type breakdown",
+    "camera_event": "Camera/event breakdown",
+    "hour_event": "Hour/event breakdown",
+    "color_type": "Color/type breakdown",
+    "origin_color": "Origin/color breakdown",
+    "route_od": "Route start/end breakdown",
+    "brand_route": "Brand/route breakdown",
+    "unclosed_entry_camera": "Entry without exit by entry camera",
+}
+
+
+def _format_thai_cross_breakdowns(spec: QuerySpec, summary: QuerySummary) -> list[str]:
+    return [
+        f"{THAI_CROSS_LABELS.get(name, name)}: {_format_cross_items(summary.cross_counts.get(name, Counter()), unit='คัน')}"
+        for name in spec.cross_breakdowns
+        if summary.cross_counts.get(name)
+    ]
+
+
+def _format_english_cross_breakdowns(spec: QuerySpec, summary: QuerySummary) -> list[str]:
+    return [
+        f"{ENGLISH_CROSS_LABELS.get(name, name)}: {_format_cross_items(summary.cross_counts.get(name, Counter()), unit='')}"
+        for name in spec.cross_breakdowns
+        if summary.cross_counts.get(name)
+    ]
+
+
+def _format_cross_items(counter: Counter[tuple[str, str]], unit: str) -> str:
+    sorted_items = sorted(counter.items(), key=lambda item: (-item[1], item[0][0].casefold(), item[0][1].casefold()))
+    if unit:
+        return ", ".join(f"{left} {right} {count} {unit}" for (left, right), count in sorted_items)
+    return ", ".join(f"{left} {right} {count}" for (left, right), count in sorted_items)
 
 
 def _format_named_counts_from_counter(counter: Counter[str]) -> str:

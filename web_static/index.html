@@ -60,6 +60,32 @@
           </label>
         </div>
 
+        <section class="quick-panel" aria-labelledby="quick-title">
+          <div class="section-title">
+            <h2 id="quick-title">จำแนกข้อมูลเร็ว</h2>
+          </div>
+          <div class="quick-group" aria-label="จำแนกพื้นฐาน">
+            <button type="button" class="quick-chip" data-summary-mode="brand" data-question="รถทั้งหมดตามยี่ห้อ">Brand</button>
+            <button type="button" class="quick-chip" data-summary-mode="color" data-question="รถทั้งหมดตามสี">Color</button>
+            <button type="button" class="quick-chip" data-summary-mode="type" data-question="รถทั้งหมดตามประเภทรถ">Type</button>
+            <button type="button" class="quick-chip" data-summary-mode="event" data-question="รถทั้งหมดตาม event">Event</button>
+            <button type="button" class="quick-chip" data-summary-mode="origin" data-question="รถทั้งหมดตามประเทศ">Country</button>
+            <button type="button" class="quick-chip" data-summary-mode="brand_color" data-question="รถทั้งหมดตามยี่ห้อและสี">Brand × Color</button>
+          </div>
+          <div class="quick-group" aria-label="จำแนกข้ามมิติ">
+            <button type="button" class="quick-chip" data-summary-mode="origin_brand" data-question="รถทั้งหมดตามประเทศและยี่ห้อ">Country × Brand</button>
+            <button type="button" class="quick-chip" data-summary-mode="origin_type" data-question="รถทั้งหมดตามประเทศและประเภทรถ">Country × Type</button>
+            <button type="button" class="quick-chip" data-summary-mode="brand_type" data-question="รถทั้งหมดตามยี่ห้อและประเภทรถ">Brand × Type</button>
+            <button type="button" class="quick-chip" data-summary-mode="camera_event" data-question="แต่ละกล้องมี entry exit pass เท่าไหร่">Camera × Event</button>
+            <button type="button" class="quick-chip" data-summary-mode="hour_event" data-question="แต่ละชั่วโมงมีรถเข้าออกกี่คัน">Hour × Event</button>
+            <button type="button" class="quick-chip" data-summary-mode="color_type" data-question="รถทั้งหมดตามสีและประเภทรถ">Color × Type</button>
+            <button type="button" class="quick-chip" data-summary-mode="origin_color" data-question="รถทั้งหมดตามประเทศและสี">Country × Color</button>
+            <button type="button" class="quick-chip" data-summary-mode="route_od" data-question="รถเดินทางจากกล้องไหนไปกล้องไหนมากที่สุด">Start × End</button>
+            <button type="button" class="quick-chip" data-summary-mode="brand_route" data-question="แต่ละยี่ห้อใช้เส้นทางไหนบ่อยสุด">Brand × Route</button>
+            <button type="button" class="quick-chip" data-summary-mode="unclosed_entry_camera" data-question="รถที่ entry แล้วไม่ exit แยกตามกล้อง entry">Open Entry × Camera</button>
+          </div>
+        </section>
+
         <details class="tool-panel">
           <summary>CSV Questions</summary>
         <form id="csvForm" class="csv-form">
@@ -133,12 +159,17 @@
           <button class="tab-button" type="button" data-tab="sql">SQL</button>
           <button class="tab-button" type="button" data-tab="json">JSON</button>
         </div>
+        <div class="follow-up-actions" id="followUpActions" hidden></div>
 
         <section class="tab-panel active" id="answerPanel" data-panel="answer">
           <pre id="answerOutput">ผลลัพธ์จะแสดงที่นี่</pre>
         </section>
 
         <section class="tab-panel" id="summaryPanel" data-panel="summary">
+          <div class="summary-overview" id="summaryOverview"></div>
+          <div class="summary-heading">
+            <h2 id="summaryTitle">Current breakdown</h2>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>

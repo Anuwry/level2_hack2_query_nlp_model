@@ -30,9 +30,13 @@ const sqlTableHead = document.querySelector("#sqlTableHead");
 const sqlRows = document.querySelector("#sqlRows");
 const sqlOutput = document.querySelector("#sqlOutput");
 const sqlMeta = document.querySelector("#sqlMeta");
+const followUpActions = document.querySelector("#followUpActions");
 const countMetric = document.querySelector("#countMetric");
 const eventMetric = document.querySelector("#eventMetric");
 const routeMetric = document.querySelector("#routeMetric");
+const summaryOverview = document.querySelector("#summaryOverview");
+const summaryTitle = document.querySelector("#summaryTitle");
+const summaryHead = document.querySelector("#summaryPanel thead tr");
 const summaryRows = document.querySelector("#summaryRows");
 const routeList = document.querySelector("#routeList");
 const batchRows = document.querySelector("#batchRows");
@@ -50,6 +54,11 @@ let latestResult = null;
 let latestBatch = null;
 let latestSql = null;
 let pendingClarification = null;
+let activeWarningKey = null;
+let suppressNextOptionalFollowUp = false;
+let pendingSummaryMode = null;
+let summaryModeOverride = null;
+const acknowledgedWarningKeys = new Set();
 const csvSample = `Question ID,CCTV ID,Time Range,Query
 Q1,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อและสี
 Q2,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อ
@@ -57,6 +66,8 @@ Q3,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตาม�
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  summaryModeOverride = pendingSummaryMode;
+  pendingSummaryMode = null;
   const question = questionInput.value.trim();
   const filters = selectedFilters();
   if (!question && !hasSelectedFilters(filters)) {
@@ -264,6 +275,7 @@ applyClarificationButton.addEventListener("click", () => {
     pendingClarification.clarification,
     option
   );
+  suppressNextOptionalFollowUp = true;
   closeClarificationModal();
   questionInput.value = nextQuestion;
   form.requestSubmit();
@@ -288,7 +300,25 @@ document.querySelectorAll("[data-tab]").forEach((button) => {
   button.addEventListener("click", () => setTab(button.dataset.tab));
 });
 
+document.querySelectorAll("[data-summary-mode][data-question]").forEach((button) => {
+  button.addEventListener("click", () => runPresetQuestion(button.dataset.question || "", button.dataset.summaryMode || null));
+});
+
+followUpActions.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-followup-question]");
+  if (!button) {
+    return;
+  }
+  runPresetQuestion(button.dataset.followupQuestion || "", button.dataset.summaryMode || null);
+});
+
 loadMetadata();
+
+function runPresetQuestion(question, summaryMode) {
+  pendingSummaryMode = summaryMode;
+  questionInput.value = question;
+  form.requestSubmit();
+}
 
 function setTab(tabName) {
   document.querySelectorAll("[data-tab]").forEach((button) => {
@@ -319,7 +349,9 @@ function renderResult(result) {
   countMetric.textContent = result.count ?? 0;
   eventMetric.textContent = result.event_count ?? 0;
   routeMetric.textContent = Array.isArray(result.routes) ? result.routes.length : 0;
-  renderSummary(result.summary?.brand_color_counts || []);
+  renderSummaryOverview(result);
+  renderSummary(summaryTableRows(result), summaryTableColumns(result), summaryModeLabel(summaryModeForResult(result)));
+  renderFollowUpActions(result);
   renderRoutes(result.routes || []);
 }
 
@@ -334,6 +366,12 @@ function renderBatchResult(batch) {
   countMetric.textContent = rows.length;
   eventMetric.textContent = rows.reduce((total, row) => total + (row.event_count || 0), 0);
   routeMetric.textContent = "-";
+  followUpActions.hidden = true;
+  followUpActions.innerHTML = "";
+  summaryOverview.innerHTML = "";
+  summaryTitle.textContent = "Current breakdown";
+  summaryHead.innerHTML = "<th>Group</th><th>Value</th><th>Count</th>";
+  summaryRows.innerHTML = "";
   renderBatchRows(rows);
   exportCsvButton.disabled = !batch.answers_csv;
 }
@@ -414,6 +452,55 @@ function answerText(result) {
   return lines.join("\n");
 }
 
+function renderFollowUpActions(result) {
+  const actions = followUpActionsForResult(result);
+  if (!actions.length) {
+    followUpActions.hidden = true;
+    followUpActions.innerHTML = "";
+    return;
+  }
+
+  followUpActions.innerHTML = [
+    '<span class="follow-up-label">ใช้ต่อ:</span>',
+    ...actions.map((action) => followUpButtonHtml(action)),
+  ].join("");
+  followUpActions.hidden = false;
+}
+
+function followUpActionsForResult(result) {
+  const mode = summaryModeForResult(result);
+  const eventFocused = mode === "event" || mode === "camera_event" || mode === "hour_event" || Boolean(result.query?.event);
+  if (!eventFocused) {
+    return [
+      { label: "ดู Event", question: "รถทั้งหมดตาม event", mode: "event" },
+      { label: "ดู Type", question: "รถทั้งหมดตามประเภทรถ", mode: "type" },
+      { label: "ดู Color", question: "รถทั้งหมดตามสี", mode: "color" },
+      { label: "ดู Country", question: "รถทั้งหมดตามประเทศ", mode: "origin" },
+    ];
+  }
+
+  return [
+    { label: "Camera × Event", question: "แต่ละกล้องมี entry exit pass เท่าไหร่", mode: "camera_event" },
+    { label: "Hour × Event", question: "แต่ละชั่วโมงมีรถเข้าออกกี่คัน", mode: "hour_event" },
+    { label: "เฉพาะ entry", question: "event entry vehicles", mode: "event" },
+    { label: "เฉพาะ exit", question: "event exit vehicles", mode: "event" },
+    { label: "เฉพาะ pass", question: "event pass vehicles", mode: "event" },
+    { label: "entry ไม่ exit", question: "entry without exit", mode: "event" },
+    { label: "entry ไม่ exit × กล้อง", question: "รถที่ entry แล้วไม่ exit แยกตามกล้อง entry", mode: "unclosed_entry_camera" },
+  ];
+}
+
+function followUpButtonHtml(action) {
+  return `
+    <button
+      type="button"
+      class="quick-chip"
+      data-followup-question="${escapeHtml(action.question)}"
+      data-summary-mode="${escapeHtml(action.mode || "")}"
+    >${escapeHtml(action.label)}</button>
+  `;
+}
+
 function showFollowUpDialog(payload) {
   if (Array.isArray(payload.answers)) {
     showBatchFollowUpDialog(payload.answers);
@@ -424,7 +511,13 @@ function showFollowUpDialog(payload) {
   const warnings = payload.warnings || [];
   const requiredClarification = clarifications.find((item) => item.required);
   if (requiredClarification) {
+    suppressNextOptionalFollowUp = false;
     openClarificationDialog("เลือกข้อมูลเพิ่มเติม", requiredClarification, warnings, payload);
+    return;
+  }
+
+  if (suppressNextOptionalFollowUp) {
+    suppressNextOptionalFollowUp = false;
     return;
   }
 
@@ -435,7 +528,7 @@ function showFollowUpDialog(payload) {
   }
 
   if (warnings.length) {
-    openWarningDialog("คำถามค้นหากว้าง", warnings);
+    openWarningDialogIfNeeded("คำถามค้นหากว้าง", warnings, warningDialogKey(payload, warnings));
   }
 }
 
@@ -454,7 +547,7 @@ function showBatchFollowUpDialog(rows) {
     (row.warnings || []).forEach((warning) => warnings.push(`${row.question_id}: ${warning}`));
   });
   if (warnings.length) {
-    openWarningDialog("คำถามค้นหากว้าง", warnings);
+    openWarningDialogIfNeeded("คำถามค้นหากว้าง", warnings, batchWarningDialogKey(rows, warnings));
   }
 }
 
@@ -464,6 +557,7 @@ function firstClarificationMessage(row) {
 }
 
 function openClarificationDialog(title, clarification, warnings, result) {
+  activeWarningKey = null;
   pendingClarification = {
     result,
     clarification,
@@ -482,8 +576,17 @@ function openClarificationDialog(title, clarification, warnings, result) {
   clarificationSelect.focus();
 }
 
-function openWarningDialog(title, warnings) {
+function openWarningDialogIfNeeded(title, warnings, key) {
+  if (suppressNextOptionalFollowUp || acknowledgedWarningKeys.has(key)) {
+    suppressNextOptionalFollowUp = false;
+    return;
+  }
+  openWarningDialog(title, warnings, key);
+}
+
+function openWarningDialog(title, warnings, key) {
   pendingClarification = null;
+  activeWarningKey = key || warningDialogKey(latestResult || {}, warnings);
   clarificationTitle.textContent = title;
   clarificationMessage.textContent = "";
   renderWarningList(warnings);
@@ -497,8 +600,22 @@ function openWarningDialog(title, warnings) {
 }
 
 function closeClarificationModal() {
+  if (activeWarningKey) {
+    acknowledgedWarningKeys.add(activeWarningKey);
+  }
   pendingClarification = null;
+  activeWarningKey = null;
   clarificationModal.hidden = true;
+}
+
+function warningDialogKey(payload, warnings) {
+  const questionKey = payload.normalized_question || payload.original_question || payload.answer || questionInput.value.trim();
+  return `${questionKey}::${(warnings || []).join("|")}`;
+}
+
+function batchWarningDialogKey(rows, warnings) {
+  const rowKey = (rows || []).map((row) => row.question_id || row.composed_question || row.query || "").join("|");
+  return `${rowKey}::${(warnings || []).join("|")}`;
 }
 
 function renderWarningList(warnings) {
@@ -592,10 +709,29 @@ function buildStructuredQuestion(query, override = {}) {
   if (query.wants_route) {
     parts.push("route");
   }
-  if (query.wants_brand_color_breakdown) {
+  if (Array.isArray(query.cross_breakdowns) && query.cross_breakdowns.length) {
+    parts.push(crossBreakdownQuestionPhrase(query.cross_breakdowns[0]));
+  } else if (query.wants_origin_brand_breakdown) {
+    parts.push("by country and brand");
+  } else if (query.wants_brand_color_breakdown) {
     parts.push("by brand and color");
   }
   return parts.join(" ") || query.raw_question || questionInput.value.trim();
+}
+
+function crossBreakdownQuestionPhrase(name) {
+  return {
+    origin_brand: "by country and brand",
+    origin_type: "by country and type",
+    brand_type: "by brand and type",
+    camera_event: "by camera and event",
+    hour_event: "by hour and event",
+    color_type: "by color and type",
+    origin_color: "by country and color",
+    route_od: "by route start and end",
+    brand_route: "by brand and route",
+    unclosed_entry_camera: "entry without exit by camera",
+  }[name] || name;
 }
 
 function selectedFilters() {
@@ -643,22 +779,187 @@ function populateSelect(select, values, emptyLabel) {
   }
 }
 
-function renderSummary(rows) {
+function summaryModeForResult(result) {
+  if (summaryModeOverride) {
+    return summaryModeOverride;
+  }
+  const [crossName] = result.query?.cross_breakdowns || [];
+  if (crossName) {
+    return crossName;
+  }
+  const inferred = inferSummaryModeFromQuestion(result.query?.raw_question || result.original_question || "");
+  if (inferred) {
+    return inferred;
+  }
+  if (result.query?.wants_event_breakdown) {
+    return "event";
+  }
+  if (result.query?.wants_origin_breakdown) {
+    return "origin";
+  }
+  if (result.query?.wants_brand_color_breakdown) {
+    return "brand_color";
+  }
+  return "brand";
+}
+
+function inferSummaryModeFromQuestion(question) {
+  const text = String(question || "").toLowerCase();
+  const has = (terms) => terms.some((term) => text.includes(term));
+  const origin = has(["country", "origin", "region", "ประเทศ", "สัญชาติ"]);
+  const brand = has(["brand", "ยี่ห้อ"]);
+  const color = has(["color", "colour", "สี"]);
+  const type = has(["type", "ประเภทรถ", "ประเภท"]);
+  const event = has(["event", "entry", "exit", "pass", "เข้า", "ออก", "ผ่าน"]);
+  const camera = has(["camera", "cctv", "กล้อง"]);
+  const hour = has(["hour", "time", "ชั่วโมง", "เวลา"]);
+  const route = has(["route", "path", "เส้นทาง", "เดินทาง"]);
+  const startEnd = has(["start", "end", "from", "to", "ต้นทาง", "ปลายทาง", "จาก", "ไป"]);
+
+  if (origin && brand) return "origin_brand";
+  if (origin && type) return "origin_type";
+  if (brand && type) return "brand_type";
+  if (camera && event) return "camera_event";
+  if (hour && event) return "hour_event";
+  if (color && type) return "color_type";
+  if (origin && color) return "origin_color";
+  if (route && startEnd) return "route_od";
+  if (brand && route) return "brand_route";
+  if (origin) return "origin";
+  if (brand && color) return "brand_color";
+  if (brand) return "brand";
+  if (color) return "color";
+  if (type) return "type";
+  if (event) return "event";
+  return null;
+}
+
+function summaryTableRows(result) {
+  const mode = summaryModeForResult(result);
+  if (CROSS_SUMMARY_MODES.has(mode)) {
+    return result.summary?.cross_counts?.[mode] || [];
+  }
+  if (mode === "brand_color") return result.summary?.brand_color_counts || [];
+  if (mode === "brand") return namedSummaryRows(result.summary?.brand_counts);
+  if (mode === "color") return namedSummaryRows(result.summary?.color_counts);
+  if (mode === "type") return namedSummaryRows(result.summary?.type_counts);
+  if (mode === "event") return namedSummaryRows(result.summary?.event_counts);
+  if (mode === "origin") return namedSummaryRows(result.summary?.origin_counts);
+  return result.summary?.brand_color_counts || [];
+}
+
+function summaryTableColumns(result) {
+  const mode = summaryModeForResult(result);
+  if (CROSS_SUMMARY_MODES.has(mode)) {
+    const labels = crossBreakdownColumnLabels(mode);
+    return [
+      { key: "left", label: labels[0] },
+      { key: "right", label: labels[1] },
+      { key: "count", label: "Count" },
+    ];
+  }
+  if (mode === "brand_color") {
+    return [
+      { key: "brand", label: "Brand" },
+      { key: "color", label: "Color" },
+      { key: "count", label: "Count" },
+    ];
+  }
+  return [
+    { key: "name", label: summaryModeLabel(mode) },
+    { key: "count", label: "Count" },
+  ];
+}
+
+const CROSS_SUMMARY_MODES = new Set([
+  "origin_brand",
+  "origin_type",
+  "brand_type",
+  "camera_event",
+  "hour_event",
+  "color_type",
+  "origin_color",
+  "route_od",
+  "brand_route",
+  "unclosed_entry_camera",
+]);
+
+function crossBreakdownColumnLabels(name) {
+  return {
+    origin_brand: ["Origin", "Brand"],
+    origin_type: ["Origin", "Type"],
+    brand_type: ["Brand", "Type"],
+    camera_event: ["Camera", "Event"],
+    hour_event: ["Hour", "Event"],
+    color_type: ["Color", "Type"],
+    origin_color: ["Origin", "Color"],
+    route_od: ["Start", "End"],
+    brand_route: ["Brand", "Route"],
+    unclosed_entry_camera: ["Camera", "Status"],
+  }[name] || ["Group", "Value"];
+}
+
+function summaryModeLabel(mode) {
+  return {
+    brand: "Brand",
+    color: "Color",
+    type: "Type",
+    event: "Event",
+    origin: "Country",
+    brand_color: "Brand × Color",
+    origin_brand: "Country × Brand",
+    origin_type: "Country × Type",
+    brand_type: "Brand × Type",
+    camera_event: "Camera × Event",
+    hour_event: "Hour × Event",
+    color_type: "Color × Type",
+    origin_color: "Country × Color",
+    route_od: "Start × End",
+    brand_route: "Brand × Route",
+    unclosed_entry_camera: "Open Entry × Camera",
+  }[mode] || "Current breakdown";
+}
+
+function namedSummaryRows(counts) {
+  return Object.entries(counts || {}).map(([name, count]) => ({ name, count }));
+}
+
+function renderSummaryOverview(result) {
+  const summary = result.summary || {};
+  const cards = [
+    ["Brands", namedSummaryRows(summary.brand_counts)],
+    ["Colors", namedSummaryRows(summary.color_counts)],
+    ["Types", namedSummaryRows(summary.type_counts)],
+    ["Events", namedSummaryRows(summary.event_counts)],
+    ["Countries", namedSummaryRows(summary.origin_counts)],
+  ];
+  summaryOverview.innerHTML = cards.map(([title, rows]) => summaryCardHtml(title, rows)).join("");
+}
+
+function summaryCardHtml(title, rows) {
+  const topRows = [...rows].sort((a, b) => Number(b.count) - Number(a.count) || a.name.localeCompare(b.name)).slice(0, 5);
+  const items = topRows.length
+    ? topRows.map((row) => `<li>${escapeHtml(row.name)} <strong>${escapeHtml(row.count)}</strong></li>`).join("")
+    : "<li>No rows</li>";
+  return `<section class="summary-card"><h3>${escapeHtml(title)}</h3><ol>${items}</ol></section>`;
+}
+
+function renderSummary(rows, columns = summaryTableColumns({}), title = "Current breakdown") {
+  summaryTitle.textContent = title;
+  summaryHead.innerHTML = columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("");
   summaryRows.innerHTML = "";
   if (!rows.length) {
     const row = document.createElement("tr");
-    row.innerHTML = '<td colspan="3">No rows</td>';
+    row.innerHTML = `<td colspan="${columns.length}">No rows</td>`;
     summaryRows.appendChild(row);
     return;
   }
 
-  rows.forEach((item) => {
+  [...rows]
+    .sort((a, b) => Number(b.count) - Number(a.count) || String(a.left || a.name || a.brand || "").localeCompare(String(b.left || b.name || b.brand || "")))
+    .forEach((item) => {
     const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${escapeHtml(item.brand)}</td>
-      <td>${escapeHtml(item.color)}</td>
-      <td>${item.count}</td>
-    `;
+    row.innerHTML = columns.map((column) => `<td>${escapeHtml(item[column.key])}</td>`).join("");
     summaryRows.appendChild(row);
   });
 }
@@ -718,7 +1019,11 @@ function renderError(message) {
   countMetric.textContent = "-";
   eventMetric.textContent = "-";
   routeMetric.textContent = "-";
+  followUpActions.hidden = true;
+  followUpActions.innerHTML = "";
   summaryRows.innerHTML = "";
+  summaryOverview.innerHTML = "";
+  summaryTitle.textContent = "Current breakdown";
   routeList.textContent = "";
   batchRows.innerHTML = "";
   sqlTableSelect.innerHTML = "";

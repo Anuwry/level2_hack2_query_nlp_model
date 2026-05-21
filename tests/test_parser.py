@@ -185,6 +185,29 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertTrue(spec.wants_origin_breakdown)
         self.assertEqual(spec.brand_origins, ("Japanese", "Korean", "European", "Chinese"))
 
+    def test_parse_origin_brand_breakdown_request(self):
+        spec = parse_question("\u0e23\u0e16\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e41\u0e25\u0e30\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d")
+
+        self.assertTrue(spec.wants_origin_breakdown)
+        self.assertTrue(spec.wants_origin_brand_breakdown)
+
+    def test_parse_supported_cross_breakdown_requests(self):
+        cases = {
+            "\u0e23\u0e16\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e41\u0e25\u0e30\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16": "origin_type",
+            "\u0e23\u0e16\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e15\u0e32\u0e21\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d\u0e41\u0e25\u0e30\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16": "brand_type",
+            "\u0e41\u0e15\u0e48\u0e25\u0e30\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e21\u0e35 entry exit pass \u0e40\u0e17\u0e48\u0e32\u0e44\u0e2b\u0e23\u0e48": "camera_event",
+            "\u0e41\u0e15\u0e48\u0e25\u0e30\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07\u0e21\u0e35\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e2d\u0e2d\u0e01\u0e01\u0e35\u0e48\u0e04\u0e31\u0e19": "hour_event",
+            "\u0e23\u0e16\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e15\u0e32\u0e21\u0e2a\u0e35\u0e41\u0e25\u0e30\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16": "color_type",
+            "\u0e23\u0e16\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e41\u0e25\u0e30\u0e2a\u0e35": "origin_color",
+            "\u0e23\u0e16\u0e40\u0e14\u0e34\u0e19\u0e17\u0e32\u0e07\u0e08\u0e32\u0e01\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e44\u0e2b\u0e19\u0e44\u0e1b\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e44\u0e2b\u0e19\u0e21\u0e32\u0e01\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14": "route_od",
+            "\u0e41\u0e15\u0e48\u0e25\u0e30\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d\u0e43\u0e0a\u0e49\u0e40\u0e2a\u0e49\u0e19\u0e17\u0e32\u0e07\u0e44\u0e2b\u0e19\u0e1a\u0e48\u0e2d\u0e22\u0e2a\u0e38\u0e14": "brand_route",
+            "\u0e23\u0e16\u0e17\u0e35\u0e48 entry \u0e41\u0e25\u0e49\u0e27\u0e44\u0e21\u0e48 exit \u0e41\u0e22\u0e01\u0e15\u0e32\u0e21\u0e01\u0e25\u0e49\u0e2d\u0e07 entry": "unclosed_entry_camera",
+        }
+
+        for question, expected in cases.items():
+            with self.subTest(question=question):
+                self.assertIn(expected, parse_question(question).cross_breakdowns)
+
     def test_parse_explicit_event_filter(self):
         spec = parse_question("day 12 event entry vehicles", known_dates=["12-05-2026"])
 

@@ -29,7 +29,7 @@ def load_records(path: str | Path) -> list[CCTVRecord]:
                         row["Brand"],
                         row["Color"],
                         row["Type"],
-                        row.get("Event") or "pass",
+                        row.get("Event"),
                     )
                 )
             except (KeyError, ValueError) as exc:
