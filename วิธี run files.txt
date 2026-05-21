@@ -9,3 +9,4 @@ python -m cctv_query.prepare_detection_logs \
 python -m cctv_query.web --host 127.0.0.1 --port 8765 --csv detections_ready.csv
 
 แนะนำเข้าไปแล้วกด brand แล้วกดเข้า Summary แล้วจากนั้นก็ query เองได้เลย
+ตั้งชื่อไฟล์ให้ตรง
