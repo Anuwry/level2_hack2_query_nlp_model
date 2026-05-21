@@ -125,7 +125,7 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertEqual(spec.cctv_id, "CCTV01")
         self.assertEqual(spec.start_time, "00:01:00")
         self.assertEqual(spec.end_time, "00:10:00")
-        self.assertEqual(spec.vehicle_type, "Car")
+        self.assertIsNone(spec.vehicle_type)
 
     def test_parse_unique_vehicle_list_request(self):
         spec = parse_question(
@@ -148,6 +148,12 @@ class ParseQuestionTests(unittest.TestCase):
         self.assertEqual(spec.vehicle_type, "Truck")
         self.assertTrue(spec.wants_distinct_vehicle_count)
 
+    def test_parse_distinct_vehicle_count_from_no_duplicate_wording(self):
+        spec = parse_question("มี Bus กี่คันถ้าไม่นับซ้ำ")
+
+        self.assertEqual(spec.vehicle_type, "Bus")
+        self.assertTrue(spec.wants_distinct_vehicle_count)
+
     def test_parse_multiple_exact_colors(self):
         spec = parse_question(
             "มีรถสี Red and Red-White กี่คัน",
@@ -156,6 +162,93 @@ class ParseQuestionTests(unittest.TestCase):
 
         self.assertEqual(spec.colors, ("Red", "Red-White"))
         self.assertEqual(spec.color, "Red")
+    
+    def test_parse_metallic_color_group(self):
+        spec = parse_question("how many metallic vehicles", known_colors=["Bronze", "Silver", "Gold", "Red"])
+
+        self.assertEqual(spec.colors, ("Bronze", "Silver", "Gold"))
+        self.assertEqual(spec.color, "Bronze")
+        self.assertTrue(spec.wants_metallic_color)
+
+    def test_parse_brand_origin_filter_terms(self):
+        japanese = parse_question("\u0e23\u0e16\u0e0d\u0e35\u0e48\u0e1b\u0e38\u0e48\u0e19\u0e01\u0e35\u0e48\u0e04\u0e31\u0e19")
+        european = parse_question("how many european cars")
+
+        self.assertEqual(japanese.brand_origins, ("Japanese",))
+        self.assertEqual(european.brand_origins, ("European",))
+
+    def test_parse_origin_breakdown_request(self):
+        spec = parse_question(
+            "\u0e41\u0e22\u0e01\u0e23\u0e16\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28 \u0e0d\u0e35\u0e48\u0e1b\u0e38\u0e48\u0e19 \u0e40\u0e01\u0e32\u0e2b\u0e25\u0e35 \u0e22\u0e38\u0e42\u0e23\u0e1b \u0e08\u0e35\u0e19"
+        )
+
+        self.assertTrue(spec.wants_origin_breakdown)
+        self.assertEqual(spec.brand_origins, ("Japanese", "Korean", "European", "Chinese"))
+
+    def test_parse_explicit_event_filter(self):
+        spec = parse_question("day 12 event entry vehicles", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.event, "entry")
+
+    def test_parse_bare_entry_event_filter(self):
+        spec = parse_question("day 12 entry vehicles", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.event, "entry")
+
+    def test_parse_entry_without_exit_as_unclosed_count(self):
+        spec = parse_question("day 12 entry vehicles without exit", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertIsNone(spec.event)
+        self.assertTrue(spec.wants_unclosed_entry_count)
+
+    def test_parse_entry_exit_count_as_event_breakdown(self):
+        spec = parse_question("day 12 count entry and exit vehicles", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertIsNone(spec.event)
+        self.assertTrue(spec.wants_event_breakdown)
+
+    def test_parse_thai_peak_hour_entry_exit_question(self):
+        spec = parse_question(
+            "จาก cctv01 ช่วงเวลาชั่วโมงไหนรถเข้าออกเยอะที่สุด",
+            known_dates=["12-05-2026"],
+        )
+
+        self.assertEqual(spec.cctv_id, "CCTV01")
+        self.assertTrue(spec.wants_peak_hour)
+        self.assertEqual(spec.events, ("entry", "exit"))
+
+    def test_parse_thai_peak_camera_entry_exit_question(self):
+        spec = parse_question(
+            "กล้องตัวไหนรถเข้าออกเยอะที่สุด",
+            known_dates=["12-05-2026"],
+        )
+
+        self.assertIsNone(spec.cctv_id)
+        self.assertTrue(spec.wants_peak_camera)
+        self.assertEqual(spec.events, ("entry", "exit"))
+
+    def test_parse_exits_alias_as_exit_event(self):
+        spec = parse_question("day 12 event exits vehicles", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.event, "exit")
+
+    def test_parse_pass_only_event(self):
+        spec = parse_question("day 12 just pass vehicles", known_dates=["12-05-2026"])
+
+        self.assertEqual(spec.date, "12-05-2026")
+        self.assertEqual(spec.event, "pass")
+
+    def test_parse_thai_entry_exit_and_pass_events(self):
+        known_dates = ["12-05-2026"]
+
+        self.assertEqual(parse_question("วันที่ 12 รถเข้ากี่คัน", known_dates=known_dates).event, "entry")
+        self.assertEqual(parse_question("วันที่ 12 รถออกกี่คัน", known_dates=known_dates).event, "exit")
+        self.assertEqual(parse_question("วันที่ 12 แค่ขับผ่านกี่คัน", known_dates=known_dates).event, "pass")
 
 
 if __name__ == "__main__":

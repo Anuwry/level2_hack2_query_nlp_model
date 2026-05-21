@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import re
+from collections import Counter
 from dataclasses import dataclass
 
 from cctv_query.engine import CCTVQueryEngine
@@ -90,6 +91,7 @@ def answer_batch_questions(engine: CCTVQueryEngine, csv_text: str) -> dict:
                 "out_of_range_reasons": list(result.out_of_range_reasons),
                 "warnings": list(result.warnings),
                 "clarifications": list(result.clarifications),
+                "answer_options": list(result.answer_options),
                 "needs_clarification": result.needs_clarification,
             }
         )
@@ -111,6 +113,13 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
     if result.out_of_range:
         return result.answer
 
+    if result.spec.wants_unclosed_entry_count:
+        return f"[entry_without_exit:{result.count}]"
+    if result.spec.wants_event_breakdown:
+        return _format_event_counts(Counter(record.event for record in result.matches))
+    if result.spec.wants_peak_hour or result.spec.wants_hour_breakdown or result.spec.wants_peak_camera or result.spec.wants_camera_breakdown:
+        return _format_aggregation_csv(result.aggregation or {})
+
     mode = _answer_mode(query_text)
     if mode == "brand_color":
         return _format_brand_color_counts(result)
@@ -118,6 +127,14 @@ def format_csv_style_answer(result: QueryResult, query_text: str) -> str:
         return _format_named_counts(result.summary.brand_counts.items())
     if mode == "color":
         return _format_named_counts(result.summary.color_counts.items())
+    if mode == "origin":
+        if result.spec.brand_origins:
+            return _format_named_counts((origin, result.summary.origin_counts.get(origin, 0)) for origin in result.spec.brand_origins)
+        return _format_named_counts(result.summary.origin_counts.items())
+    if mode == "type":
+        return _format_named_counts(result.summary.type_counts.items())
+    if mode == "event":
+        return _format_event_counts(Counter(record.event for record in result.matches))
     return result.answer
 
 
@@ -134,16 +151,62 @@ def _format_named_counts(items) -> str:
     return "[" + ", ".join(f"{name}:{count}" for name, count in sorted_items) + "]"
 
 
+def _format_event_counts(counts: Counter[str]) -> str:
+    items = [(event, counts[event]) for event in ("entry", "exit", "pass") if counts[event]]
+    extras = sorted((event, count) for event, count in counts.items() if event not in {"entry", "exit", "pass"})
+    return "[" + ", ".join(f"{event}:{count}" for event, count in items + extras) + "]"
+
+
+def _format_aggregation_csv(aggregation: dict) -> str:
+    rows = aggregation.get("top") or aggregation.get("rows") or []
+    return "[" + ", ".join(f"{row.get('label') or row.get('key')}:{row.get('count', 0)}" for row in rows) + "]"
+
+
 def _answer_mode(query_text: str) -> str:
     normalized = query_text.casefold()
     has_brand = any(term in normalized for term in ("brand", "\u0e22\u0e35\u0e48\u0e2b\u0e49\u0e2d"))
     has_color = any(term in normalized for term in ("color", "colour", "\u0e2a\u0e35"))
+    has_origin = any(
+        term in normalized
+        for term in (
+            "country",
+            "countries",
+            "origin",
+            "region",
+            "nationality",
+            "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28",
+            "\u0e2a\u0e31\u0e0d\u0e0a\u0e32\u0e15\u0e34",
+            "\u0e0d\u0e35\u0e48\u0e1b\u0e38\u0e48\u0e19",
+            "\u0e08\u0e35\u0e19",
+            "\u0e40\u0e01\u0e32\u0e2b\u0e25\u0e35",
+            "\u0e22\u0e38\u0e42\u0e23\u0e1b",
+        )
+    )
+    has_type = any(term in normalized for term in ("vehicle type", "vehicle types", "type", "types", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17"))
+    has_event = any(term in normalized for term in ("event", "events", "\u0e2a\u0e16\u0e32\u0e19\u0e30"))
+    has_event_word = any(
+        re.search(pattern, normalized)
+        for pattern in (
+            r"\bentry\b",
+            r"\bexit\b",
+            r"\bexits\b",
+            r"\bpass\b",
+            r"\bpassed\b",
+            r"\bpassing\b",
+        )
+    )
     if has_brand and has_color:
         return "brand_color"
     if has_brand:
         return "brand"
     if has_color:
         return "color"
+    if has_origin:
+        return "origin"
+    if has_type:
+        return "type"
+    if has_event or has_event_word:
+        return "event"
     return "answer"
 
 

@@ -3,7 +3,7 @@ import unittest
 from cctv_query.engine import CCTVQueryEngine
 from cctv_query.llm_normalizer import LLMNormalizationResult
 from cctv_query.models import CCTVRecord
-from cctv_query.web import handle_batch_query_payload, handle_query_payload
+from cctv_query.web import handle_batch_query_payload, handle_metadata_payload, handle_query_payload, handle_sql_to_csv_payload
 
 
 class WebApiTests(unittest.TestCase):
@@ -34,6 +34,47 @@ class WebApiTests(unittest.TestCase):
     def test_handle_query_payload_rejects_empty_question(self):
         with self.assertRaises(ValueError):
             handle_query_payload(self.engine, {"question": "   "})
+
+    def test_handle_query_payload_applies_structured_filters(self):
+        response = handle_query_payload(
+            self.engine,
+            {
+                "question": "vehicles",
+                "date": "12-05-2026",
+                "cctv_id": "CCTV01",
+                "start_time": "08:00",
+                "end_time": "08:30",
+            },
+        )
+
+        self.assertEqual(response["count"], 1)
+        self.assertEqual(response["query"]["date"], "12-05-2026")
+        self.assertEqual(response["query"]["cctv_id"], "CCTV01")
+        self.assertEqual(response["query"]["start_time"], "08:00:00")
+        self.assertEqual(response["query"]["end_time"], "08:30:00")
+
+    def test_handle_query_payload_allows_controls_only_query(self):
+        response = handle_query_payload(
+            self.engine,
+            {
+                "question": "",
+                "date": "12-05-2026",
+                "cctv_id": "CCTV01",
+            },
+        )
+
+        self.assertEqual(response["count"], 2)
+        self.assertEqual(response["query"]["cctv_id"], "CCTV01")
+
+    def test_handle_query_payload_rejects_partial_time_filter(self):
+        with self.assertRaises(ValueError):
+            handle_query_payload(self.engine, {"question": "vehicles", "start_time": "08:00"})
+
+    def test_handle_metadata_payload_returns_filter_options(self):
+        response = handle_metadata_payload(self.engine)
+
+        self.assertEqual(response["dates"], ["12-05-2026"])
+        self.assertEqual(response["cctv_ids"], ["CCTV01", "CCTV02"])
 
     def test_handle_query_payload_marks_out_of_range(self):
         response = handle_query_payload(self.engine, {"question": "วันที่ 14 มีรถผ่านกี่คัน"})
@@ -87,6 +128,23 @@ class WebApiTests(unittest.TestCase):
         self.assertIn("Q_SINGLE", response["answers_csv"])
         self.assertIn('"[(Toyota, Red):1]"', response["answers_csv"])
 
+    def test_handle_query_payload_returns_answer_options_for_entry_without_exit(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:03:00", "Toyota", "Red", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "White", "Car", event="entry"),
+            ]
+        )
+
+        response = handle_query_payload(engine, {"question": "day 12 entry vehicles without exit"})
+
+        self.assertEqual(response["count"], 1)
+        self.assertEqual(response["csv_answer"], "[entry_without_exit:1]")
+        option_ids = [option["id"] for option in response["answer_options"]]
+        self.assertIn("entry_without_exit", option_ids)
+        self.assertIn("event_breakdown", option_ids)
+
     def test_handle_query_payload_uses_dot_time_range_for_single_question_csv_text(self):
         response = handle_query_payload(
             self.engine,
@@ -107,6 +165,20 @@ class WebApiTests(unittest.TestCase):
         self.assertEqual(response["answers"][0]["csv_answer"], "[(Toyota, Red):1]")
         self.assertIn("Question ID,Answer", response["answers_csv"])
         self.assertIn('"[(Toyota, Red):1]"', response["answers_csv"])
+
+    def test_handle_sql_to_csv_payload_returns_tables(self):
+        response = handle_sql_to_csv_payload(
+            {
+                "sql_text": (
+                    "CREATE TABLE vehicles (id INTEGER, brand TEXT, color TEXT);"
+                    "INSERT INTO vehicles (id, brand, color) VALUES (1, 'Toyota', 'Red');"
+                )
+            }
+        )
+
+        self.assertEqual(response["selected_table"], "vehicles")
+        self.assertEqual(response["tables"][0]["columns"], ["id", "brand", "color"])
+        self.assertIn("Toyota", response["tables"][0]["csv"])
 
     def test_handle_query_payload_auto_detects_multi_question_csv_text(self):
         response = handle_query_payload(

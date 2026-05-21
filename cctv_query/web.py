@@ -17,6 +17,7 @@ from cctv_query.llm_normalizer import (
     LLMNormalizationResult,
     normalize_question_if_enabled,
 )
+from cctv_query.sql_exchange import convert_sql_to_response
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +31,7 @@ def handle_query_payload(
     payload: dict,
     normalizer: WebNormalizer | None = None,
 ) -> dict:
-    question = str(payload.get("question", "")).strip()
+    question = _compose_question_from_payload(payload)
     if not question:
         raise ValueError("Question is required.")
 
@@ -63,11 +64,51 @@ def handle_query_payload(
     return response
 
 
+def handle_metadata_payload(engine: CCTVQueryEngine) -> dict:
+    return {
+        "dates": list(engine.known_dates),
+        "cctv_ids": list(engine.known_cctv_ids),
+    }
+
+
 def handle_batch_query_payload(engine: CCTVQueryEngine, payload: dict) -> dict:
     csv_text = str(payload.get("csv_text", "")).strip()
     if not csv_text:
         raise ValueError("CSV text is required.")
     return answer_batch_questions(engine, csv_text)
+
+
+def handle_sql_to_csv_payload(payload: dict) -> dict:
+    sql_text = str(payload.get("sql_text", "")).strip()
+    if not sql_text:
+        raise ValueError("SQL text is required.")
+    return convert_sql_to_response(sql_text)
+
+
+def _compose_question_from_payload(payload: dict) -> str:
+    question = str(payload.get("question", "")).strip()
+    if _looks_like_multi_question_csv(question):
+        return question
+
+    date = str(payload.get("date", "")).strip()
+    cctv_id = str(payload.get("cctv_id", "")).strip()
+    start_time = str(payload.get("start_time", "")).strip()
+    end_time = str(payload.get("end_time", "")).strip()
+    if bool(start_time) != bool(end_time):
+        raise ValueError("Please select both start and end time, or leave both empty.")
+
+    parts: list[str] = []
+    if date:
+        parts.append(f"date {date}")
+    if cctv_id:
+        parts.append(cctv_id)
+    if start_time and end_time:
+        parts.append(f"from {start_time} to {end_time}")
+    if question:
+        parts.append(question)
+    elif parts:
+        parts.append("vehicles")
+    return " ".join(parts)
 
 
 def _looks_like_multi_question_csv(text: str) -> bool:
@@ -104,6 +145,17 @@ class CCTVRequestHandler(BaseHTTPRequestHandler):
                 }
             )
             return
+        if path == "/api/metadata":
+            self._send_json(handle_metadata_payload(self.server.engine))
+            return
+        if path == "/api/sql-sample":
+            self._send_json(
+                {
+                    "schema_sql": _read_project_text("schema.sql"),
+                    "examples_sql": _read_project_text("examples.sql"),
+                }
+            )
+            return
         if path.startswith("/static/"):
             self._send_static(path.removeprefix("/static/"))
             return
@@ -111,13 +163,15 @@ class CCTVRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path not in {"/api/query", "/api/batch-query"}:
+        if path not in {"/api/query", "/api/batch-query", "/api/sql-to-csv"}:
             self._send_error(HTTPStatus.NOT_FOUND, "Not found")
             return
 
         try:
             payload = self._read_json_body()
-            if path == "/api/batch-query":
+            if path == "/api/sql-to-csv":
+                response = handle_sql_to_csv_payload(payload)
+            elif path == "/api/batch-query":
                 response = handle_batch_query_payload(self.server.engine, payload)
             else:
                 response = handle_query_payload(self.server.engine, payload)
@@ -193,6 +247,13 @@ def _env_bool(name: str) -> bool:
     if value is None:
         return False
     return value.strip().casefold() in {"1", "true", "yes", "on", "llm", "enabled"}
+
+
+def _read_project_text(filename: str) -> str:
+    path = PROJECT_ROOT / filename
+    if not path.exists() or not path.is_file():
+        return ""
+    return path.read_text(encoding="utf-8")
 
 
 def run(host: str, port: int, csv_path: Path) -> None:

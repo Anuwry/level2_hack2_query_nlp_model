@@ -8,7 +8,7 @@ from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from cctv_query.normalization import normalize_cctv_id, normalize_date, normalize_time
+from cctv_query.normalization import normalize_cctv_id, normalize_date, normalize_event, normalize_time
 
 
 DEFAULT_LLM_BASE_URL = "http://127.0.0.1:8080/v1"
@@ -16,6 +16,7 @@ DEFAULT_LLM_MODEL = "Qwen/Qwen3.5-4B"
 DEFAULT_LLM_TIMEOUT_SECONDS = 8.0
 TOOL_NAME = "normalize_cctv_query"
 VEHICLE_TYPES = ("Car", "Motorcycle", "Bus", "Truck")
+EVENTS = ("pass", "entry", "exit")
 
 JsonTransport = Callable[[str, dict[str, Any], dict[str, str], float], dict[str, Any]]
 
@@ -170,6 +171,7 @@ def build_chat_completion_request(
         "known_colors": _clean_list(known_colors),
         "known_dates": _clean_known_dates(known_dates),
         "vehicle_types": list(VEHICLE_TYPES),
+        "events": list(EVENTS),
     }
     request: dict[str, Any] = {
         "model": model,
@@ -236,6 +238,7 @@ def canonical_question_from_payload(
     brand = _canonical_known(payload.get("brand"), known_brands)
     colors = _canonical_colors(payload, known_colors)
     vehicle_type = _canonical_vehicle_type(payload.get("vehicle_type"))
+    event = _canonical_event(payload.get("event"))
 
     if date:
         parts.append(f"date {date}")
@@ -249,6 +252,8 @@ def canonical_question_from_payload(
         parts.append(f"color {' and '.join(colors)}")
     if vehicle_type:
         parts.append(f"type {vehicle_type}")
+    if event:
+        parts.append(f"event {event}")
     if _truthy(payload.get("wants_brand_color_breakdown")):
         parts.append("brand and color")
     if _truthy(payload.get("wants_route")):
@@ -365,6 +370,11 @@ def _tool_schema(known_brands: list[str], known_colors: list[str], known_dates: 
             "description": "Exact vehicle colors. Multiple colors mean OR.",
         },
         "vehicle_type": {"type": "string", "enum": list(VEHICLE_TYPES)},
+        "event": {
+            "type": "string",
+            "enum": list(EVENTS),
+            "description": "Optional event status: pass, entry, or exit.",
+        },
         "wants_brand_color_breakdown": {"type": "boolean"},
         "wants_route": {"type": "boolean"},
         "wants_vehicle_list": {"type": "boolean"},
@@ -404,7 +414,8 @@ def _system_prompt(mode: str) -> str:
         "For multiple colors, keep every requested color as an OR list. "
         "Set wants_vehicle_list for questions asking which vehicles or list of vehicles. "
         "Set wants_distinct_vehicle_count for questions asking for non-duplicate or unique vehicle counts. "
-        "Set wants_route for route/path/travel-direction questions."
+        "Set wants_route for route/path/travel-direction questions. "
+        "Use event=entry for entry questions, event=exit for exit/exits questions, and event=pass for explicit pass-only questions."
     )
     if mode == "tools":
         return base_rules + " Call the normalize_cctv_query tool exactly once."
@@ -412,7 +423,7 @@ def _system_prompt(mode: str) -> str:
         base_rules
         + " Return only a JSON object with fields: normalized_question, date, cctv_id, "
         "start_time, end_time, brand, colors, vehicle_type, wants_brand_color_breakdown, "
-        "wants_route, wants_vehicle_list, wants_distinct_vehicle_count."
+        "event, wants_route, wants_vehicle_list, wants_distinct_vehicle_count."
     )
 
 
@@ -564,6 +575,14 @@ def _canonical_vehicle_type(value: Any) -> str | None:
         if text.casefold() == vehicle_type.casefold():
             return vehicle_type
     return None
+
+
+def _canonical_event(value: Any) -> str | None:
+    text = _string_or_none(value)
+    if not text:
+        return None
+    event = normalize_event(text)
+    return event if event in EVENTS else None
 
 
 def _truthy(value: Any) -> bool:

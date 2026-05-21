@@ -14,6 +14,7 @@ class CCTVRecord:
     brand: str
     color: str
     vehicle_type: str
+    event: str = "pass"
 
     @classmethod
     def from_values(
@@ -24,10 +25,12 @@ class CCTVRecord:
         brand: str,
         color: str,
         vehicle_type: str,
+        event: str = "pass",
     ) -> "CCTVRecord":
         from cctv_query.normalization import (
             normalize_cctv_id,
             normalize_date,
+            normalize_event,
             normalize_time,
             time_to_seconds,
         )
@@ -41,6 +44,7 @@ class CCTVRecord:
             brand=brand.strip(),
             color=color.strip(),
             vehicle_type=vehicle_type.strip(),
+            event=normalize_event(event),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -58,13 +62,24 @@ class QuerySpec:
     start_seconds: int | None = None
     end_seconds: int | None = None
     brand: str | None = None
+    brand_origins: tuple[str, ...] = ()
     color: str | None = None
     colors: tuple[str, ...] = ()
     vehicle_type: str | None = None
+    event: str | None = None
+    events: tuple[str, ...] = ()
     wants_brand_color_breakdown: bool = False
+    wants_origin_breakdown: bool = False
     wants_route: bool = False
     wants_vehicle_list: bool = False
     wants_distinct_vehicle_count: bool = False
+    wants_event_breakdown: bool = False
+    wants_unclosed_entry_count: bool = False
+    wants_peak_hour: bool = False
+    wants_peak_camera: bool = False
+    wants_hour_breakdown: bool = False
+    wants_camera_breakdown: bool = False
+    wants_metallic_color: bool = False
     out_of_range_fields: tuple[str, ...] = ()
     ambiguous_date_options: tuple[str, ...] = ()
 
@@ -77,7 +92,9 @@ class QuerySummary:
     brand_color_counts: Counter[tuple[str, str]]
     brand_counts: Counter[str]
     color_counts: Counter[str]
+    origin_counts: Counter[str]
     type_counts: Counter[str]
+    event_counts: Counter[str]
     event_count: int
     unique_vehicle_count: int
 
@@ -91,7 +108,9 @@ class QuerySummary:
             ],
             "brand_counts": dict(self.brand_counts),
             "color_counts": dict(self.color_counts),
+            "origin_counts": dict(self.origin_counts),
             "type_counts": dict(self.type_counts),
+            "event_counts": dict(self.event_counts),
         }
 
 
@@ -106,6 +125,8 @@ class QueryResult:
     out_of_range_reasons: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     clarifications: tuple[dict[str, Any], ...] = ()
+    answer_options: tuple[dict[str, Any], ...] = ()
+    aggregation: dict[str, Any] | None = None
 
     @property
     def count(self) -> int:
@@ -128,6 +149,8 @@ class QueryResult:
             "out_of_range_reasons": list(self.out_of_range_reasons),
             "warnings": list(self.warnings),
             "clarifications": list(self.clarifications),
+            "answer_options": list(self.answer_options),
+            "aggregation": self.aggregation,
             "needs_clarification": self.needs_clarification,
             "query": self.spec.to_dict(),
             "summary": self.summary.to_dict(),
@@ -166,6 +189,7 @@ class VehicleRoute:
             "brand": self.representative.brand,
             "color": self.representative.color,
             "type": self.representative.vehicle_type,
+            "event": self.representative.event,
             "path": self.path,
             "start_time": self.start_time,
             "end_time": self.end_time,

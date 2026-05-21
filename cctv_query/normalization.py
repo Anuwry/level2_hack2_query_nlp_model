@@ -6,6 +6,24 @@ from datetime import datetime
 
 DATE_FORMATS = ("%d-%m-%Y", "%d/%m/%Y", "%d %m %Y", "%Y-%m-%d", "%Y/%m/%d", "%Y %m %d")
 TIME_PATTERN = re.compile(r"^\s*(?P<hour>\d{1,2}):(?P<minute>\d{1,2})(?::(?P<second>\d{1,2}))?\s*$")
+EVENT_ALIASES = {
+    "": "pass",
+    "pass": "pass",
+    "passed": "pass",
+    "passing": "pass",
+    "entry": "entry",
+    "enter": "entry",
+    "entered": "entry",
+    "entering": "entry",
+    "in": "entry",
+    "exit": "exit",
+    "exits": "exit",
+    "exited": "exit",
+    "exiting": "exit",
+    "out": "exit",
+    "leave": "exit",
+    "leaving": "exit",
+}
 
 
 def normalize_date(value: str) -> str:
@@ -38,6 +56,13 @@ def normalize_time(value: str) -> str:
     if not (0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
         raise ValueError(f"Invalid time '{value}'. Time is outside 00:00:00-23:59:59.")
     return f"{hour:02d}:{minute:02d}:{second:02d}"
+
+
+def normalize_event(value: str | None) -> str:
+    if value is None:
+        return "pass"
+    text = re.sub(r"\s+", "_", str(value).strip().casefold())
+    return EVENT_ALIASES.get(text, text or "pass")
 
 
 def time_to_seconds(value: str) -> int:

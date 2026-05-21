@@ -35,6 +35,67 @@ def make_records():
     ]
 
 
+def make_event_records():
+    return [
+        CCTVRecord.from_values(
+            "12-05-2026",
+            "CCTV01",
+            "08:00:00",
+            "Toyota",
+            "Red",
+            "Car",
+            event="entry",
+        ),
+        CCTVRecord.from_values(
+            "12-05-2026",
+            "CCTV02",
+            "08:05:00",
+            "Toyota",
+            "Red",
+            "Car",
+            event="exit",
+        ),
+        CCTVRecord.from_values(
+            "12-05-2026",
+            "CCTV01",
+            "09:00:00",
+            "Honda",
+            "White",
+            "Car",
+            event="entry",
+        ),
+        CCTVRecord.from_values(
+            "12-05-2026",
+            "CCTV03",
+            "09:30:00",
+            "Honda",
+            "White",
+            "Car",
+            event="exit",
+        ),
+        CCTVRecord.from_values(
+            "12-05-2026",
+            "CCTV04",
+            "10:00:00",
+            "Isuzu",
+            "Black",
+            "Truck",
+            event="pass",
+        ),
+    ]
+
+
+def make_open_entry_records():
+    return [
+        CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car", event="entry"),
+        CCTVRecord.from_values("12-05-2026", "CCTV02", "08:05:00", "Toyota", "Red", "Car", event="exit"),
+        CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "White", "Car", event="entry"),
+        CCTVRecord.from_values("12-05-2026", "CCTV03", "10:00:00", "Mazda", "Blue", "Car", event="entry"),
+        CCTVRecord.from_values("12-05-2026", "CCTV04", "10:03:00", "Mazda", "Blue", "Car", event="pass"),
+        CCTVRecord.from_values("12-05-2026", "CCTV04", "11:00:00", "Isuzu", "Black", "Truck", event="pass"),
+    ]
+
+
 class CCTVQueryEngineTests(unittest.TestCase):
     def setUp(self):
         self.engine = CCTVQueryEngine(make_records())
@@ -211,7 +272,7 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertEqual(result.out_of_range_reasons, ("cctv_id",))
         self.assertEqual(result.answer, "Question Out Of Range")
 
-    def test_distinct_vehicle_count_collapses_repeated_route_groups(self):
+    def test_distinct_vehicle_count_uses_route_groups_not_brand_color_identity(self):
         engine = CCTVQueryEngine(
             [
                 CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Hino", "Black", "Truck"),
@@ -226,12 +287,130 @@ class CCTVQueryEngineTests(unittest.TestCase):
         distinct_result = engine.ask("กระผมอยากทราบว่ารถ truck ในวันที่ 12 นี่มีกี่คันครับ รถไม่ซ้ำ")
 
         self.assertEqual(normal_result.count, 3)
-        self.assertEqual(distinct_result.count, 2)
+        self.assertEqual(distinct_result.count, 3)
         self.assertEqual(len(distinct_result.routes), 3)
         self.assertEqual(distinct_result.event_count, 5)
-        self.assertEqual(distinct_result.summary.brand_color_counts[("Hino", "Black")], 1)
-        self.assertIn("2 คันไม่ซ้ำ", distinct_result.answer)
-        self.assertIn("รวมซ้ำ 3 รายการ", distinct_result.answer)
+        self.assertEqual(distinct_result.summary.brand_color_counts[("Hino", "Black")], 2)
+        self.assertIn("3 คันไม่ซ้ำ", distinct_result.answer)
+        self.assertNotIn("รวมซ้ำ", distinct_result.answer)
+
+    def test_event_filter_counts_explicit_entry_events(self):
+        engine = CCTVQueryEngine(make_event_records())
+
+        result = engine.ask("day 12 event entry vehicles")
+
+        self.assertEqual(result.spec.event, "entry")
+        self.assertEqual(result.count, 2)
+        self.assertEqual(result.event_count, 2)
+        self.assertEqual(result.summary.brand_counts["Toyota"], 1)
+        self.assertEqual(result.summary.brand_counts["Honda"], 1)
+
+    def test_bare_entry_event_filter_counts_entry_events(self):
+        engine = CCTVQueryEngine(make_event_records())
+
+        result = engine.ask("day 12 entry vehicles")
+
+        self.assertEqual(result.spec.event, "entry")
+        self.assertEqual(result.count, 2)
+
+    def test_entry_without_exit_counts_routes_and_offers_event_options(self):
+        engine = CCTVQueryEngine(make_open_entry_records())
+
+        result = engine.ask("day 12 entry vehicles without exit")
+
+        self.assertTrue(result.spec.wants_unclosed_entry_count)
+        self.assertIsNone(result.spec.event)
+        self.assertEqual(result.count, 2)
+        self.assertEqual({route.representative.brand for route in result.routes}, {"Honda", "Mazda"})
+        self.assertIn("entry and no exit", result.answer)
+        options = {option["id"]: option for option in result.answer_options}
+        self.assertEqual(options["entry_without_exit"]["csv_answer"], "[entry_without_exit:2]")
+        self.assertEqual(options["event_breakdown"]["csv_answer"], "[entry:3, exit:1, pass:2]")
+        self.assertEqual(options["entry_only"]["csv_answer"], "[entry:3]")
+        self.assertEqual(options["exit_only"]["csv_answer"], "[exit:1]")
+
+    def test_event_breakdown_question_returns_event_counts_and_options(self):
+        engine = CCTVQueryEngine(make_open_entry_records())
+
+        result = engine.ask("day 12 count entry and exit vehicles")
+
+        self.assertTrue(result.spec.wants_event_breakdown)
+        self.assertEqual(result.count, 6)
+        self.assertEqual(result.summary.event_counts["entry"], 3)
+        self.assertEqual(result.summary.event_counts["exit"], 1)
+        self.assertIn("Event breakdown: entry:3, exit:1, pass:2", result.answer)
+        self.assertTrue(result.answer_options)
+
+    def test_peak_hour_question_groups_entry_exit_by_hour_for_camera(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:05:00", "Toyota", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:10:00", "Honda", "Red", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:20:00", "Honda", "Blue", "Car", event="pass"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:05:00", "Mazda", "White", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:30:00", "Isuzu", "Black", "Truck", event="entry"),
+            ]
+        )
+
+        result = engine.ask("จาก cctv01 ช่วงเวลาชั่วโมงไหนรถเข้าออกเยอะที่สุด")
+
+        self.assertTrue(result.spec.wants_peak_hour)
+        self.assertEqual(result.spec.events, ("entry", "exit"))
+        self.assertEqual(result.aggregation["top"][0]["label"], "08:00-08:59")
+        self.assertEqual(result.aggregation["top"][0]["count"], 2)
+        self.assertEqual(result.count, 3)
+        self.assertIn("08:00-08:59", result.answer)
+        self.assertNotIn("No time range specified", result.warnings)
+
+    def test_peak_camera_question_groups_entry_exit_by_camera(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:05:00", "Toyota", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:10:00", "Honda", "Red", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:20:00", "Honda", "Blue", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV03", "09:05:00", "Mazda", "White", "Car", event="pass"),
+            ]
+        )
+
+        result = engine.ask("กล้องตัวไหนรถเข้าออกเยอะที่สุด")
+
+        self.assertTrue(result.spec.wants_peak_camera)
+        self.assertEqual(result.spec.events, ("entry", "exit"))
+        self.assertEqual(result.aggregation["top"][0]["label"], "CCTV02")
+        self.assertEqual(result.aggregation["top"][0]["count"], 2)
+        self.assertEqual(result.count, 3)
+        self.assertNotIn("No CCTV camera specified", result.warnings)
+
+    def test_exits_alias_filters_exit_event(self):
+        engine = CCTVQueryEngine(make_event_records())
+
+        result = engine.ask("day 12 event exits vehicles")
+
+        self.assertEqual(result.spec.event, "exit")
+        self.assertEqual(result.count, 2)
+        self.assertEqual(result.event_count, 2)
+        self.assertEqual(result.summary.brand_counts["Honda"], 1)
+        self.assertEqual(result.summary.brand_counts["Toyota"], 1)
+        self.assertIn("event exit", result.answer)
+
+    def test_thai_exit_question_filters_exit_event(self):
+        engine = CCTVQueryEngine(make_event_records())
+
+        result = engine.ask("วันที่ 12 รถออกกี่คัน")
+
+        self.assertEqual(result.spec.event, "exit")
+        self.assertEqual(result.count, 2)
+
+    def test_pass_only_filters_pass_event(self):
+        engine = CCTVQueryEngine(make_event_records())
+
+        result = engine.ask("day 12 just pass vehicles")
+
+        self.assertEqual(result.spec.event, "pass")
+        self.assertEqual(result.count, 1)
+        self.assertEqual(result.event_count, 1)
+        self.assertEqual(result.summary.brand_counts["Isuzu"], 1)
+        self.assertIn("event pass", result.answer)
 
     def test_returns_clear_no_match_answer(self):
         result = self.engine.ask("CCTV04 between 05:00:00 and 05:10:00 red trucks")
@@ -239,6 +418,105 @@ class CCTVQueryEngineTests(unittest.TestCase):
         self.assertFalse(result.out_of_range)
         self.assertEqual(result.count, 0)
         self.assertIn("No matching records", result.answer)
+
+    def test_unrecognized_question_does_not_fallback_to_all_records(self):
+        result = self.engine.ask("what should I eat for dinner")
+
+        self.assertFalse(result.out_of_range)
+        self.assertEqual(result.count, 0)
+        self.assertEqual(result.event_count, 0)
+        self.assertEqual(result.matches, [])
+        self.assertIn("Could not understand", result.answer)
+
+    def test_thai_unrecognized_question_does_not_fallback_to_all_records(self):
+        result = self.engine.ask("วันนี้อากาศดีไหม")
+
+        self.assertFalse(result.out_of_range)
+        self.assertEqual(result.count, 0)
+        self.assertEqual(result.event_count, 0)
+        self.assertEqual(result.matches, [])
+        self.assertIn("ไม่เข้าใจคำถาม", result.answer)
+
+    def test_broad_vehicle_count_can_still_query_all_records(self):
+        result = self.engine.ask("how many vehicles are there")
+
+        self.assertFalse(result.out_of_range)
+        self.assertGreater(result.count, 0)
+        self.assertEqual(result.event_count, len(make_records()))
+        self.assertNotIn("Could not understand", result.answer)
+
+    def test_brand_origin_filter_counts_route_groups(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV02", "08:05:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "BYD", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "11:00:00", "BMW", "Black", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "12:00:00", "Kia", "Silver", "Car"),
+            ]
+        )
+
+        result = engine.ask("how many Japanese vehicles")
+
+        self.assertEqual(result.spec.brand_origins, ("Japanese",))
+        self.assertEqual(result.count, 2)
+        self.assertEqual(result.event_count, 3)
+        self.assertEqual(result.summary.origin_counts["Japanese"], 2)
+        self.assertNotIn("BYD", result.summary.brand_counts)
+
+    def test_european_origin_filter_includes_european_country_brands(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "BMW", "Black", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Peugeot", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "Mini", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "11:00:00", "Ford", "Blue", "Car"),
+            ]
+        )
+
+        result = engine.ask("how many european vehicles")
+
+        self.assertEqual(result.count, 3)
+        self.assertEqual(set(result.summary.brand_counts), {"BMW", "Peugeot", "Mini"})
+
+    def test_origin_breakdown_answer_and_summary(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "BYD", "White", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "BMW", "Black", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "11:00:00", "Kia", "Silver", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "12:00:00", "Ford", "Blue", "Car"),
+            ]
+        )
+
+        result = engine.ask("vehicles by country")
+
+        self.assertTrue(result.spec.wants_origin_breakdown)
+        self.assertEqual(result.summary.origin_counts["Japanese"], 1)
+        self.assertEqual(result.summary.origin_counts["Chinese"], 1)
+        self.assertEqual(result.summary.origin_counts["European"], 1)
+        self.assertEqual(result.summary.origin_counts["Korean"], 1)
+        self.assertEqual(result.summary.origin_counts["American"], 1)
+        self.assertIn("Origin breakdown: American:1, Chinese:1, European:1, Japanese:1, Korean:1", result.answer)
+
+    def test_metallic_color_filter_uses_bronze_silver_gold(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "08:00:00", "Toyota", "Bronze", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "09:00:00", "Honda", "Silver", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "10:00:00", "BMW", "Gold", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "11:00:00", "BYD", "Red", "Car"),
+            ]
+        )
+
+        result = engine.ask("how many metallic vehicles")
+
+        self.assertEqual(result.spec.colors, ("Bronze", "Silver", "Gold"))
+        self.assertEqual(result.count, 3)
+        self.assertEqual(set(result.summary.color_counts), {"Bronze", "Silver", "Gold"})
+        self.assertIn("metallic", result.answer)
 
 
 if __name__ == "__main__":

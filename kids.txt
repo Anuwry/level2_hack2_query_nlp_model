@@ -1,0 +1,203 @@
+./scripts/run_live_rtsp_5.sh \
+rtsp://172.16.30.8:8554/cctv1 \
+rtsp://172.16.30.8:8554/cctv2 \
+rtsp://172.16.30.8:8554/cctv3 \
+rtsp://172.16.30.8:8554/cctv4 \
+rtsp://172.16.30.10:8554/cctv5 \
+max headless
+
+./scripts/run_record_rtsp_5.sh \
+rtsp://172.16.30.8:8554/cctv1 \
+rtsp://172.16.30.8:8554/cctv2 \
+rtsp://172.16.30.8:8554/cctv3 \
+rtsp://172.16.30.8:8554/cctv4 \
+rtsp://172.16.30.10:8554/cctv5 \
+480  max
+
+exp2@exp2-desktop:~/jetson_yolo_vehicle_pipeline$ ./scripts/run_live_rtsp_5.sh \> rtsp://172.16.30.8:8554/cctv1 \
+> rtsp://172.16.30.8:8554/cctv2 \
+> rtsp://172.16.30.8:8554/cctv3 \
+> rtsp://172.16.30.8:8554/cctv4 \
+> rtsp://172.16.30.10:8554/cctv5 \
+> max headless
+DeepStream 5-camera RTSP live display
+RTSP sources:
+  source0  rtsp://172.16.30.8:8554/cctv1
+  source1  rtsp://172.16.30.8:8554/cctv2
+  source2  rtsp://172.16.30.8:8554/cctv3
+  source3  rtsp://172.16.30.8:8554/cctv4
+  source4  rtsp://172.16.30.10:8554/cctv5
+cameras:       5
+profile:       max
+display mode:  headless
+sink type:     1
+pgie batch:    5
+streammux:     416x256
+tracker size:  256x160
+
+** WARN: <parse_osd:992>: Unknown key 'border-color' for group [osd]
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream-6.0/lib/libnvds_nvmultiobjecttracker.so
+gstnvtracker: Batch processing is ON
+gstnvtracker: Past frame output is OFF
+[NvMultiObjectTracker] Initialized
+Deserialize yoloLayer plugin: yolo_17
+Deserialize yoloLayer plugin: yolo_24
+0:00:12.534600550  6092     0x4072c390 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary_gie> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1900> [UID = 1]: deserialized trt engine from :/home/exp2/jetson_yolo_vehicle_pipeline/model_b5_gpu0_fp16.engine
+INFO: [Implicit Engine Info]: layers num: 3
+0   INPUT  kFLOAT data            3x256x416       
+1   OUTPUT kFLOAT yolo_17         27x8x13         
+2   OUTPUT kFLOAT yolo_24         27x16x26        
+
+0:00:12.535891393  6092     0x4072c390 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary_gie> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2004> [UID = 1]: Use deserialized engine model: /home/exp2/jetson_yolo_vehicle_pipeline/model_b5_gpu0_fp16.engine
+0:00:12.561257252  6092     0x4072c390 INFO                 nvinfer gstnvinfer_impl.cpp:313:notifyLoadModelStatus:<primary_gie> [UID 1]: Load new model:/home/exp2/jetson_yolo_vehicle_pipeline/configs/generated_pgie_yolo_vehicle.txt sucessfully
+
+Runtime commands:
+	h: Print this help
+	q: Quit
+
+
+	p: Pause
+	r: Resume
+
+
+**PERF:  FPS 0 (Avg)	FPS 1 (Avg)	FPS 2 (Avg)	FPS 3 (Avg)	FPS 4 (Avg)	
+**PERF:  0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	
+** INFO: <bus_callback:194>: Pipeline ready
+
+Opening in BLOCKING MODE 
+Opening in BLOCKING MODE 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+Opening in BLOCKING MODE 
+Opening in BLOCKING MODE 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+Opening in BLOCKING MODE 
+NvMMLiteOpen : Block : BlockType = 261 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+** INFO: <bus_callback:180>: Pipeline running
+
+**PERF:  0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	
+**PERF:  9.16 (9.05)	9.36 (9.23)	9.36 (9.23)	9.36 (9.23)	9.36 (9.23)	
+**PERF:  9.54 (9.40)	7.35 (7.99)	8.94 (9.07)	7.55 (8.13)	9.51 (9.34)	
+**PERF:  8.15 (8.86)	8.96 (8.32)	9.16 (9.04)	9.14 (8.40)	6.20 (8.07)	
+**PERF:  9.04 (8.73)	9.12 (8.51)	9.12 (9.03)	8.95 (8.57)	9.12 (8.34)	
+**PERF:  8.22 (8.74)	8.88 (8.62)	8.09 (8.84)	8.88 (8.67)	8.88 (8.49)	
+**PERF:  9.05 (8.79)	9.08 (8.54)	9.06 (8.91)	7.28 (8.43)	6.69 (8.18)	
+**PERF:  8.82 (8.82)	7.01 (8.43)	9.00 (8.92)	9.00 (8.52)	9.00 (8.31)	
+**PERF:  8.31 (8.74)	8.52 (8.42)	9.28 (8.85)	7.86 (8.37)	5.22 (7.76)	
+**PERF:  9.20 (8.79)	9.20 (8.52)	6.85 (8.68)	6.90 (8.23)	5.41 (7.60)	
+**PERF:  8.98 (8.81)	8.98 (8.57)	8.98 (8.71)	8.98 (8.31)	7.98 (7.64)	
+**PERF:  9.10 (8.85)	9.10 (8.63)	9.10 (8.76)	9.10 (8.40)	9.10 (7.79)	
+**PERF:  8.49 (8.81)	9.10 (8.66)	9.10 (8.78)	9.10 (8.45)	6.87 (7.70)	
+**PERF:  8.17 (8.76)	7.77 (8.59)	8.97 (8.80)	8.97 (8.49)	8.97 (7.81)	
+**PERF:  7.98 (8.71)	8.77 (8.61)	9.17 (8.83)	9.17 (8.55)	8.17 (7.83)	
+^C** ERROR: <_intr_handler:140>: User Interrupted.. 
+
+Quitting
+
+
+
+STREAMMUX_WIDTH=640 \
+STREAMMUX_HEIGHT=360 \
+TRACKER_WIDTH_OVERRIDE=320 \
+TRACKER_HEIGHT_OVERRIDE=192 \
+./scripts/run_live_rtsp_5.sh \
+rtsp://172.16.30.9:8554/cctv0 \
+rtsp://172.16.30.8:8554/cctv1 \
+rtsp://172.16.30.8:8554/cctv2 \
+rtsp://172.16.30.8:8554/cctv3 \
+rtsp://172.16.30.8:8554/cctv4 \
+ balanced headless
+
+
+>  balanced headless
+DeepStream 5-camera RTSP live display
+RTSP sources:
+  source0  rtsp://172.16.30.9:8554/cctv0
+  source1  rtsp://172.16.30.8:8554/cctv1
+  source2  rtsp://172.16.30.8:8554/cctv2
+  source3  rtsp://172.16.30.8:8554/cctv3
+  source4  rtsp://172.16.30.8:8554/cctv4
+cameras:       5
+profile:       balanced
+display mode:  headless
+sink type:     1
+pgie batch:    5
+streammux:     640x360
+tracker size:  320x192
+
+** WARN: <parse_osd:992>: Unknown key 'border-color' for group [osd]
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream-6.0/lib/libnvds_nvmultiobjecttracker.so
+gstnvtracker: Batch processing is ON
+gstnvtracker: Past frame output is OFF
+[NvMultiObjectTracker] Initialized
+Deserialize yoloLayer plugin: yolo_17
+Deserialize yoloLayer plugin: yolo_24
+0:00:07.115263755  9868     0x1b212990 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary_gie> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:1900> [UID = 1]: deserialized trt engine from :/home/exp2/jetson_yolo_vehicle_pipeline/model_b5_gpu0_fp16.engine
+INFO: [Implicit Engine Info]: layers num: 3
+0   INPUT  kFLOAT data            3x256x416       
+1   OUTPUT kFLOAT yolo_17         27x8x13         
+2   OUTPUT kFLOAT yolo_24         27x16x26        
+
+0:00:07.116566528  9868     0x1b212990 INFO                 nvinfer gstnvinfer.cpp:638:gst_nvinfer_logger:<primary_gie> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2004> [UID = 1]: Use deserialized engine model: /home/exp2/jetson_yolo_vehicle_pipeline/model_b5_gpu0_fp16.engine
+0:00:07.132773563  9868     0x1b212990 INFO                 nvinfer gstnvinfer_impl.cpp:313:notifyLoadModelStatus:<primary_gie> [UID 1]: Load new model:/home/exp2/jetson_yolo_vehicle_pipeline/configs/generated_pgie_yolo_vehicle.txt sucessfully
+
+Runtime commands:
+	h: Print this help
+	q: Quit
+
+	p: Pause
+	r: Resume
+
+
+**PERF:  FPS 0 (Avg)	FPS 1 (Avg)	FPS 2 (Avg)	FPS 3 (Avg)	FPS 4 (Avg)	
+**PERF:  0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	
+** INFO: <bus_callback:194>: Pipeline ready
+
+Opening in BLOCKING MODE 
+Opening in BLOCKING MODE 
+Opening in BLOCKING MODE 
+NvMMLiteOpen : Block : BlockType = 261 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteOpen : Block : BlockType = 261 
+Opening in BLOCKING MODE 
+Opening in BLOCKING MODE 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+** INFO: <bus_callback:180>: Pipeline running
+
+**PERF:  0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	0.00 (0.00)	
+**PERF:  8.12 (7.93)	7.27 (7.13)	8.16 (7.99)	7.60 (7.45)	7.60 (7.45)	
+**PERF:  7.91 (7.98)	8.11 (7.78)	7.51 (7.75)	8.11 (7.91)	8.11 (7.91)	
+**PERF:  8.17 (7.44)	8.26 (7.94)	7.86 (7.77)	8.26 (8.02)	8.26 (8.02)	
+**PERF:  5.50 (7.14)	8.16 (7.95)	8.16 (7.83)	8.16 (8.01)	8.16 (8.01)	
+**PERF:  8.03 (7.38)	7.64 (7.92)	7.25 (7.74)	8.03 (8.05)	8.03 (8.05)	
+**PERF:  8.14 (7.52)	8.14 (7.97)	8.14 (7.82)	8.14 (8.08)	8.14 (8.08)	
+**PERF:  8.01 (7.60)	8.01 (7.97)	8.01 (7.85)	7.81 (8.04)	8.01 (8.07)	
+**PERF:  6.61 (7.46)	8.02 (7.98)	8.02 (7.87)	8.02 (8.03)	8.02 (8.06)	
+**PERF:  1.28 (6.73)	8.32 (8.00)	8.32 (7.91)	8.32 (8.05)	8.32 (8.07)	
+**PERF:  6.24 (6.72)	8.13 (8.02)	6.15 (7.73)	8.13 (8.07)	8.13 (8.09)	
+**PERF:  8.05 (6.84)	8.05 (8.02)	8.05 (7.75)	8.05 (8.06)	6.24 (7.91)	
+**PERF:  7.00 (6.85)	8.00 (8.02)	8.00 (7.77)	8.00 (8.05)	8.00 (7.92)	
+WARNING from src_elem0: Could not read from resource.
+

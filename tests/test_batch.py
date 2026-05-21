@@ -31,13 +31,89 @@ class BatchCsvTests(unittest.TestCase):
         response = answer_batch_questions(self.engine, _sample_csv())
         answers = {row["question_id"]: row["csv_answer"] for row in response["answers"]}
 
-        self.assertEqual(answers["Q1"], "[(Honda, Gray):1, (Toyota, Gray):1, (Toyota, Red):1]")
-        self.assertEqual(answers["Q2"], "[Toyota:2, Honda:1]")
-        self.assertEqual(answers["Q3"], "[Gray:2, Red:1]")
+        self.assertEqual(answers["Q1"], "[(Hino, Gray):1, (Honda, Gray):1, (Toyota, Gray):1, (Toyota, Red):1]")
+        self.assertEqual(answers["Q2"], "[Toyota:2, Hino:1, Honda:1]")
+        self.assertEqual(answers["Q3"], "[Gray:3, Red:1]")
 
         parsed_csv = list(csv.DictReader(io.StringIO(response["answers_csv"])))
         self.assertEqual(parsed_csv[0]["Question ID"], "Q1")
         self.assertEqual(parsed_csv[0]["Answer"], answers["Q1"])
+
+    def test_answer_batch_questions_outputs_vehicle_type_breakdown(self):
+        response = answer_batch_questions(
+            self.engine,
+            'Q28,CCTV01,00:00:00 - 23:59:59,"อยากรู้ว่ากล้อง CCTV01 ตรวจเจอรถประเภทไหนบ้าง และแต่ละประเภทมีจำนวนเท่าไหร่"\n',
+        )
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[Car:3, Truck:1]")
+        self.assertIn('Q28,"[Car:3, Truck:1]"', response["answers_csv"])
+
+    def test_answer_batch_questions_outputs_origin_breakdown(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:01:30", "Toyota", "Gray", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:02:30", "BYD", "Red", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:03:30", "BMW", "Black", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:04:30", "Kia", "Silver", "Car"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,00:00:00 - 00:10:00,vehicles by country\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[Chinese:1, European:1, Japanese:1, Korean:1]")
+
+    def test_answer_batch_questions_outputs_metallic_color_counts(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:01:30", "Toyota", "Bronze", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:02:30", "BYD", "Silver", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:03:30", "BMW", "Gold", "Car"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:04:30", "Kia", "Red", "Car"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,00:00:00 - 00:10:00,metallic vehicles by color\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[Bronze:1, Gold:1, Silver:1]")
+
+    def test_answer_batch_questions_outputs_event_breakdown(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:01:30", "Toyota", "Gray", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:02:30", "Toyota", "Gray", "Car", event="pass"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:03:30", "Toyota", "Gray", "Car", event="exit"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,00:00:00 - 00:10:00,vehicles by event\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[entry:1, exit:1, pass:1]")
+
+    def test_answer_batch_questions_outputs_bare_entry_breakdown(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:01:30", "Toyota", "Gray", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:03:30", "Toyota", "Gray", "Car", event="exit"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,00:00:00 - 00:10:00,entry vehicles\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[entry:1]")
+
+    def test_answer_batch_questions_outputs_entry_without_exit_answer(self):
+        engine = CCTVQueryEngine(
+            [
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:01:30", "Toyota", "Gray", "Car", event="entry"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:02:30", "Toyota", "Gray", "Car", event="exit"),
+                CCTVRecord.from_values("12-05-2026", "CCTV01", "00:03:30", "Honda", "White", "Car", event="entry"),
+            ]
+        )
+
+        response = answer_batch_questions(engine, "Q1,CCTV01,00:00:00 - 00:10:00,entry without exit\n")
+
+        self.assertEqual(response["answers"][0]["csv_answer"], "[entry_without_exit:1]")
+        self.assertTrue(response["answers"][0]["answer_options"])
 
     def test_parse_project_multiline_question_format(self):
         rows = parse_batch_question_csv(

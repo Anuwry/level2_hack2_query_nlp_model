@@ -3,6 +3,10 @@ const questionInput = document.querySelector("#question");
 const submitButton = document.querySelector("#submitButton");
 const clearButton = document.querySelector("#clearButton");
 const llmToggle = document.querySelector("#llmToggle");
+const dateFilter = document.querySelector("#dateFilter");
+const cctvFilter = document.querySelector("#cctvFilter");
+const startTimeFilter = document.querySelector("#startTimeFilter");
+const endTimeFilter = document.querySelector("#endTimeFilter");
 const csvForm = document.querySelector("#csvForm");
 const csvInput = document.querySelector("#csvInput");
 const csvFile = document.querySelector("#csvFile");
@@ -10,10 +14,22 @@ const runCsvButton = document.querySelector("#runCsvButton");
 const exportCsvButton = document.querySelector("#exportCsvButton");
 const clearCsvButton = document.querySelector("#clearCsvButton");
 const loadCsvSampleButton = document.querySelector("#loadCsvSampleButton");
+const sqlForm = document.querySelector("#sqlForm");
+const sqlInput = document.querySelector("#sqlInput");
+const sqlFile = document.querySelector("#sqlFile");
+const convertSqlButton = document.querySelector("#convertSqlButton");
+const exportSqlCsvButton = document.querySelector("#exportSqlCsvButton");
+const clearSqlButton = document.querySelector("#clearSqlButton");
+const loadSqlSampleButton = document.querySelector("#loadSqlSampleButton");
 const statusPill = document.querySelector("#statusPill");
 const answerOutput = document.querySelector("#answerOutput");
 const jsonOutput = document.querySelector("#jsonOutput");
 const csvOutput = document.querySelector("#csvOutput");
+const sqlTableSelect = document.querySelector("#sqlTableSelect");
+const sqlTableHead = document.querySelector("#sqlTableHead");
+const sqlRows = document.querySelector("#sqlRows");
+const sqlOutput = document.querySelector("#sqlOutput");
+const sqlMeta = document.querySelector("#sqlMeta");
 const countMetric = document.querySelector("#countMetric");
 const eventMetric = document.querySelector("#eventMetric");
 const routeMetric = document.querySelector("#routeMetric");
@@ -32,6 +48,7 @@ const keepCurrentAnswerButton = document.querySelector("#keepCurrentAnswerButton
 
 let latestResult = null;
 let latestBatch = null;
+let latestSql = null;
 let pendingClarification = null;
 const csvSample = `Question ID,CCTV ID,Time Range,Query
 Q1,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตามยี่ห้อและสี
@@ -41,8 +58,13 @@ Q3,CCTVO1,0.01.00 - 0.10.00,จำนวนรถยนต์แยกตาม�
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const question = questionInput.value.trim();
-  if (!question) {
+  const filters = selectedFilters();
+  if (!question && !hasSelectedFilters(filters)) {
     renderError("กรุณากรอกคำถาม");
+    return;
+  }
+  if ((filters.start_time && !filters.end_time) || (!filters.start_time && filters.end_time)) {
+    renderError("กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดให้ครบ หรือปล่อยว่างทั้งคู่");
     return;
   }
 
@@ -52,7 +74,7 @@ form.addEventListener("submit", async (event) => {
     const response = await fetch("/api/query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, use_llm: llmToggle.checked }),
+      body: JSON.stringify({ question, ...filters, use_llm: llmToggle.checked }),
     });
     const payload = await response.json();
     if (!response.ok) {
@@ -80,6 +102,10 @@ form.addEventListener("submit", async (event) => {
 
 clearButton.addEventListener("click", () => {
   questionInput.value = "";
+  dateFilter.value = "";
+  cctvFilter.value = "";
+  startTimeFilter.value = "";
+  endTimeFilter.value = "";
   questionInput.focus();
 });
 
@@ -146,6 +172,87 @@ exportCsvButton.addEventListener("click", () => {
   downloadTextFile("cctv_answers.csv", latestBatch.answers_csv, "text/csv;charset=utf-8");
 });
 
+sqlForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const sqlText = sqlInput.value.trim();
+  if (!sqlText) {
+    renderError("Please paste or upload SQL first.");
+    return;
+  }
+
+  convertSqlButton.disabled = true;
+  statusPill.textContent = "SQL";
+  try {
+    const response = await fetch("/api/sql-to-csv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql_text: sqlText }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "SQL conversion failed");
+    }
+    latestSql = payload;
+    latestResult = payload;
+    renderSqlResult(payload);
+    jsonOutput.textContent = JSON.stringify(payload, null, 2);
+    setTab("sql");
+    statusPill.textContent = "Ready";
+  } catch (error) {
+    renderError(error.message);
+    statusPill.textContent = "Error";
+  } finally {
+    convertSqlButton.disabled = false;
+  }
+});
+
+sqlFile.addEventListener("change", async () => {
+  const [file] = sqlFile.files || [];
+  if (!file) {
+    return;
+  }
+  sqlInput.value = await file.text();
+});
+
+loadSqlSampleButton.addEventListener("click", async () => {
+  statusPill.textContent = "Loading";
+  try {
+    const response = await fetch("/api/sql-sample");
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Could not load SQL sample");
+    }
+    sqlInput.value = [payload.schema_sql, payload.examples_sql].filter(Boolean).join("\n\n");
+    sqlInput.focus();
+    statusPill.textContent = "Ready";
+  } catch (error) {
+    renderError(error.message);
+    statusPill.textContent = "Error";
+  }
+});
+
+clearSqlButton.addEventListener("click", () => {
+  sqlInput.value = "";
+  sqlFile.value = "";
+  latestSql = null;
+  exportSqlCsvButton.disabled = true;
+  sqlTableSelect.innerHTML = "";
+  sqlTableHead.innerHTML = "";
+  sqlRows.innerHTML = "";
+  sqlOutput.textContent = "";
+  sqlMeta.textContent = "No SQL table";
+});
+
+exportSqlCsvButton.addEventListener("click", () => {
+  const table = selectedSqlTable();
+  if (!table?.csv) {
+    return;
+  }
+  downloadTextFile(`${table.name}.csv`, table.csv, "text/csv;charset=utf-8");
+});
+
+sqlTableSelect.addEventListener("change", renderSelectedSqlTable);
+
 applyClarificationButton.addEventListener("click", () => {
   if (!pendingClarification) {
     closeClarificationModal();
@@ -177,16 +284,11 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
-document.querySelectorAll("[data-question]").forEach((button) => {
-  button.addEventListener("click", () => {
-    questionInput.value = button.dataset.question;
-    form.requestSubmit();
-  });
-});
-
 document.querySelectorAll("[data-tab]").forEach((button) => {
   button.addEventListener("click", () => setTab(button.dataset.tab));
 });
+
+loadMetadata();
 
 function setTab(tabName) {
   document.querySelectorAll("[data-tab]").forEach((button) => {
@@ -236,6 +338,59 @@ function renderBatchResult(batch) {
   exportCsvButton.disabled = !batch.answers_csv;
 }
 
+function renderSqlResult(payload) {
+  const tables = payload.tables || [];
+  sqlTableSelect.innerHTML = "";
+  tables.forEach((table) => {
+    const option = document.createElement("option");
+    option.value = table.name;
+    option.textContent = `${table.name} (${table.row_count || 0})`;
+    sqlTableSelect.appendChild(option);
+  });
+  sqlTableSelect.value = payload.selected_table || tables[0]?.name || "";
+  renderSelectedSqlTable();
+}
+
+function selectedSqlTable() {
+  const tables = latestSql?.tables || [];
+  return tables.find((table) => table.name === sqlTableSelect.value) || tables[0] || null;
+}
+
+function renderSelectedSqlTable() {
+  const table = selectedSqlTable();
+  sqlTableHead.innerHTML = "";
+  sqlRows.innerHTML = "";
+  sqlOutput.textContent = "";
+  exportSqlCsvButton.disabled = true;
+
+  if (!table) {
+    sqlMeta.textContent = "No SQL table";
+    return;
+  }
+
+  sqlMeta.textContent = `${table.row_count || 0} rows`;
+  const headerRow = document.createElement("tr");
+  (table.columns || []).forEach((column) => {
+    const cell = document.createElement("th");
+    cell.textContent = column;
+    headerRow.appendChild(cell);
+  });
+  sqlTableHead.appendChild(headerRow);
+
+  (table.rows || []).forEach((item) => {
+    const row = document.createElement("tr");
+    (table.columns || []).forEach((column) => {
+      const cell = document.createElement("td");
+      cell.textContent = item[column] ?? "";
+      row.appendChild(cell);
+    });
+    sqlRows.appendChild(row);
+  });
+
+  sqlOutput.textContent = table.csv || "";
+  exportSqlCsvButton.disabled = !table.csv;
+}
+
 function answerText(result) {
   const lines = [];
   const normalization = result.llm_normalization || {};
@@ -248,6 +403,14 @@ function answerText(result) {
     lines.push("");
   }
   lines.push(result.answer || "");
+  if (Array.isArray(result.answer_options) && result.answer_options.length) {
+    lines.push("");
+    lines.push("คำตอบทางเลือก:");
+    result.answer_options.forEach((option, index) => {
+      const csv = option.csv_answer ? ` | CSV: ${option.csv_answer}` : "";
+      lines.push(`${index + 1}. ${option.answer || option.label || option.id}${csv}`);
+    });
+  }
   return lines.join("\n");
 }
 
@@ -396,8 +559,32 @@ function buildStructuredQuestion(query, override = {}) {
   if (query.vehicle_type) {
     parts.push(`type ${query.vehicle_type}`);
   }
+  if (query.event) {
+    parts.push(`event ${query.event}`);
+  }
+  if (Array.isArray(query.events) && query.events.length) {
+    parts.push(`events ${query.events.join(" and ")}`);
+  }
   if (query.wants_distinct_vehicle_count) {
     parts.push("distinct vehicles");
+  }
+  if (query.wants_unclosed_entry_count) {
+    parts.push("entry without exit");
+  }
+  if (query.wants_event_breakdown) {
+    parts.push("by event");
+  }
+  if (query.wants_peak_hour) {
+    parts.push("busiest hour");
+  }
+  if (query.wants_peak_camera) {
+    parts.push("busiest camera");
+  }
+  if (query.wants_hour_breakdown) {
+    parts.push("by hour");
+  }
+  if (query.wants_camera_breakdown) {
+    parts.push("by camera");
   }
   if (query.wants_vehicle_list) {
     parts.push("list vehicles");
@@ -409,6 +596,51 @@ function buildStructuredQuestion(query, override = {}) {
     parts.push("by brand and color");
   }
   return parts.join(" ") || query.raw_question || questionInput.value.trim();
+}
+
+function selectedFilters() {
+  return {
+    date: dateFilter.value,
+    cctv_id: cctvFilter.value,
+    start_time: startTimeFilter.value,
+    end_time: endTimeFilter.value,
+  };
+}
+
+function hasSelectedFilters(filters) {
+  return Boolean(filters.date || filters.cctv_id || filters.start_time || filters.end_time);
+}
+
+async function loadMetadata() {
+  try {
+    const response = await fetch("/api/metadata");
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Could not load filters");
+    }
+    populateSelect(dateFilter, payload.dates || [], "ทุกวันที่");
+    populateSelect(cctvFilter, payload.cctv_ids || [], "ทุกกล้อง");
+  } catch (error) {
+    console.warn(error.message);
+  }
+}
+
+function populateSelect(select, values, emptyLabel) {
+  const currentValue = select.value;
+  select.innerHTML = "";
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = emptyLabel;
+  select.appendChild(empty);
+  values.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+  if (values.includes(currentValue)) {
+    select.value = currentValue;
+  }
 }
 
 function renderSummary(rows) {
@@ -477,6 +709,7 @@ function renderBatchRows(rows) {
 function renderError(message) {
   latestResult = null;
   latestBatch = null;
+  latestSql = null;
   answerOutput.classList.add("error");
   answerOutput.textContent = message;
   jsonOutput.textContent = "{}";
@@ -488,6 +721,12 @@ function renderError(message) {
   summaryRows.innerHTML = "";
   routeList.textContent = "";
   batchRows.innerHTML = "";
+  sqlTableSelect.innerHTML = "";
+  sqlTableHead.innerHTML = "";
+  sqlRows.innerHTML = "";
+  sqlOutput.textContent = "";
+  sqlMeta.textContent = "No SQL table";
+  exportSqlCsvButton.disabled = true;
 }
 
 function escapeHtml(value) {
