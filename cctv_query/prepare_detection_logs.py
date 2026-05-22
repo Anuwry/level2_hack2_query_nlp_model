@@ -16,6 +16,52 @@ DEFAULT_LOG1 = PROJECT_ROOT / "detections_v2_20260521_165339 (1).csv"
 DEFAULT_OUTPUT = PROJECT_ROOT / "detections_ready.csv"
 DEFAULT_TIME_WINDOW_SECONDS = 2
 
+LOG1_CAMERA_MAP = {
+    "cam1": "CCTV01",
+    "camera1": "CCTV01",
+    "cctv1": "CCTV01",
+    "cctv01": "CCTV01",
+    "cam2": "CCTV02",
+    "camera2": "CCTV02",
+    "cctv2": "CCTV02",
+    "cctv02": "CCTV02",
+    "cam3": "CCTV03",
+    "camera3": "CCTV03",
+    "cctv3": "CCTV03",
+    "cctv03": "CCTV03",
+    "cam4": "CCTV04",
+    "camera4": "CCTV04",
+    "cctv4": "CCTV04",
+    "cctv04": "CCTV04",
+    "cam5": "CCTV05",
+    "camera5": "CCTV05",
+    "cctv5": "CCTV05",
+    "cctv05": "CCTV05",
+}
+
+LOG2_CAMERA_MAP = {
+    "cam1": "CCTV06",
+    "camera1": "CCTV06",
+    "cctv1": "CCTV06",
+    "cctv01": "CCTV06",
+    "cam2": "CCTV07",
+    "camera2": "CCTV07",
+    "cctv2": "CCTV07",
+    "cctv02": "CCTV07",
+    "cam3": "CCTV08",
+    "camera3": "CCTV08",
+    "cctv3": "CCTV08",
+    "cctv03": "CCTV08",
+    "cam4": "CCTV09",
+    "camera4": "CCTV09",
+    "cctv4": "CCTV09",
+    "cctv04": "CCTV09",
+    "cam5": "CCTV10",
+    "camera5": "CCTV10",
+    "cctv5": "CCTV10",
+    "cctv05": "CCTV10",
+}
+
 
 @dataclass(frozen=True)
 class DetectionConversionReport:
@@ -46,7 +92,8 @@ def convert_detection_logs(
         temp_root = Path(tmpdir)
         for index, source_path in enumerate(source_paths, start=1):
             temp_output = temp_root / f"detections_{index}_ready.csv"
-            report = convert_csv(source_path, temp_output)
+            camera_id_map = LOG1_CAMERA_MAP if index == 1 else LOG2_CAMERA_MAP
+            report = convert_csv(source_path, temp_output, camera_id_map=camera_id_map)
             source_reports.append(report)
             converted_rows.extend(_read_rows(temp_output))
 

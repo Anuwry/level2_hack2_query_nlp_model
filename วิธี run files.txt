@@ -16,9 +16,19 @@ python -m cctv_query.prepare_detection_logs --log1 .\detections_v2_20260521_1653
 cd D:\sup_ai\query_mock
 
 python -m cctv_query.prepare_detection_logs `
+  --log1 ".\พี่แม็ค.csv" `
+  --log2 ".\พี่นนท์.csv" `
+  --output ".\all_required_plus_detections_ready.csv" `
+  --time-window-seconds 2
+
+  python -m cctv_query.web --host 127.0.0.1 --port 8765 --csv ".\all_required_plus_detections_ready.csv"
+
+cd D:\sup_ai\query_mock
+
+python -m cctv_query.prepare_detection_logs `
   --log1 ".\all_required_output.csv" `
   --log2 ".\detections_v2_20260521_165339 (1).csv" `
   --output ".\all_required_plus_detections_ready.csv" `
   --time-window-seconds 2
 
-  python -m cctv_query.web --host 127.0.0.1 --port 8765 --csv ".\all_required_plus_detections_ready.csv"
+python -m cctv_query.web --host 127.0.0.1 --port 8765 --csv ".\all_required_plus_detections_ready.csv"

@@ -10,12 +10,12 @@ from cctv_query.prepare_split_logs import convert_split_logs
 class PrepareSplitLogsTests(unittest.TestCase):
     def test_merges_log1_and_log2_with_per_file_camera_mapping(self):
         log1 = """timestamp,source_uri,vehicle_type,car_brand,car_color
-2026-05-22T06:00:00,rtsp://172.16.30.8:8554/cctv0,car,Toyota,White
-2026-05-22T06:01:00,rtsp://172.16.30.8:8554/cctv4,motorbike,Honda,Gray
+2026-05-22T06:00:00,rtsp://172.16.30.8:8554/cctv1,car,Toyota,White
+2026-05-22T06:01:00,rtsp://172.16.30.8:8554/cctv5,motorbike,Honda,Gray
 """
         log2 = """timestamp,source_uri,vehicle_type,car_brand,car_color
-2026-05-22T06:02:00,rtsp://172.16.30.8:8554/cctv5,truck,Isuzu,Black
-2026-05-22T06:03:00,rtsp://172.16.30.8:8554/cctv9,car,Ford,Blue
+2026-05-22T06:02:00,rtsp://172.16.30.8:8554/cctv1,truck,Isuzu,Black
+2026-05-22T06:03:00,rtsp://172.16.30.8:8554/cctv5,car,Ford,Blue
 """
         with tempfile.TemporaryDirectory() as tmpdir:
             log1_path = Path(tmpdir) / "log(1).csv"
@@ -39,7 +39,7 @@ class PrepareSplitLogsTests(unittest.TestCase):
         self.assertEqual(report.input_rows, 4)
         self.assertEqual(report.output_rows, 4)
         self.assertEqual(report.skipped_rows, 0)
-        self.assertEqual([row["CCTV_ID"] for row in rows], ["CCTV01", "CCTV05", "CCTV01", "CCTV05"])
+        self.assertEqual([row["CCTV_ID"] for row in rows], ["CCTV01", "CCTV05", "CCTV06", "CCTV10"])
         self.assertEqual([record.brand for record in records], ["Toyota", "Motorcycle", "Hino", "Ford"])
 
 

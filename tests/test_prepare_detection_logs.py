@@ -16,8 +16,8 @@ class PrepareDetectionLogsTests(unittest.TestCase):
 2026-05-21T16:54:20.000,cam1,car,0.8569,Honda,0.9795,White,0.4375
 """
         log2 = """timestamp,camera_id,vehicle_type,detection_conf,car_brand,brand_conf,car_color,color_score
-2026-05-21T16:55:00.000,cam5,motorcycle,0.4824,,,, 
-2026-05-21T16:55:01.000,cam5,motorcycle,0.4534,Motorcycle,0.6176,Gray,0.3391
+2026-05-21T16:55:00.000,cam1,motorcycle,0.4824,,,, 
+2026-05-21T16:55:01.000,cam1,motorcycle,0.4534,Motorcycle,0.6176,Gray,0.3391
 2026-05-21T16:55:10.000,cam5,truck,0.4055,Isuzu,0.6710,Black,0.4607
 """
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -42,8 +42,9 @@ class PrepareDetectionLogsTests(unittest.TestCase):
         self.assertEqual(rows[0]["First_Seen"], "16:54:10")
         self.assertEqual(rows[0]["Last_Seen"], "16:54:12")
         self.assertEqual(rows[0]["Brand"], "Toyota")
-        self.assertEqual(rows[2]["CCTV_ID"], "CCTV05")
+        self.assertEqual(rows[2]["CCTV_ID"], "CCTV06")
         self.assertEqual(rows[2]["Brand"], "Motorcycle")
+        self.assertEqual(rows[4]["CCTV_ID"], "CCTV10")
         self.assertEqual(rows[4]["Brand"], "Hino")
         self.assertEqual([record.event for record in records], ["", "", "", "", ""])
 

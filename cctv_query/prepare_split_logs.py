@@ -16,18 +16,48 @@ DEFAULT_LOG2 = PROJECT_ROOT / "log(2).csv"
 DEFAULT_OUTPUT = PROJECT_ROOT / "cctv_vehicle_log_split_ready.csv"
 
 LOG1_CAMERA_MAP = {
-    "cctv0": "CCTV01",
-    "cctv1": "CCTV02",
-    "cctv2": "CCTV03",
-    "cctv3": "CCTV04",
-    "cctv4": "CCTV05",
+    "cam1": "CCTV01",
+    "camera1": "CCTV01",
+    "cctv1": "CCTV01",
+    "cctv01": "CCTV01",
+    "cam2": "CCTV02",
+    "camera2": "CCTV02",
+    "cctv2": "CCTV02",
+    "cctv02": "CCTV02",
+    "cam3": "CCTV03",
+    "camera3": "CCTV03",
+    "cctv3": "CCTV03",
+    "cctv03": "CCTV03",
+    "cam4": "CCTV04",
+    "camera4": "CCTV04",
+    "cctv4": "CCTV04",
+    "cctv04": "CCTV04",
+    "cam5": "CCTV05",
+    "camera5": "CCTV05",
+    "cctv5": "CCTV05",
+    "cctv05": "CCTV05",
 }
 LOG2_CAMERA_MAP = {
-    "cctv5": "CCTV01",
-    "cctv6": "CCTV02",
-    "cctv7": "CCTV03",
-    "cctv8": "CCTV04",
-    "cctv9": "CCTV05",
+    "cam1": "CCTV06",
+    "camera1": "CCTV06",
+    "cctv1": "CCTV06",
+    "cctv01": "CCTV06",
+    "cam2": "CCTV07",
+    "camera2": "CCTV07",
+    "cctv2": "CCTV07",
+    "cctv02": "CCTV07",
+    "cam3": "CCTV08",
+    "camera3": "CCTV08",
+    "cctv3": "CCTV08",
+    "cctv03": "CCTV08",
+    "cam4": "CCTV09",
+    "camera4": "CCTV09",
+    "cctv4": "CCTV09",
+    "cctv04": "CCTV09",
+    "cam5": "CCTV10",
+    "camera5": "CCTV10",
+    "cctv5": "CCTV10",
+    "cctv05": "CCTV10",
 }
 
 
@@ -86,8 +116,8 @@ def convert_split_logs(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Convert and merge split CCTV log(1)/log(2) CSVs into one ready site CSV.")
-    parser.add_argument("--log1", default=str(DEFAULT_LOG1), help="Input CSV for log(1): cctv0-cctv4 -> CCTV01-CCTV05.")
-    parser.add_argument("--log2", default=str(DEFAULT_LOG2), help="Input CSV for log(2): cctv5-cctv9 -> CCTV01-CCTV05.")
+    parser.add_argument("--log1", default=str(DEFAULT_LOG1), help="Input CSV for log1: cam1-cam5 -> CCTV01-CCTV05.")
+    parser.add_argument("--log2", default=str(DEFAULT_LOG2), help="Input CSV for log2: cam1-cam5 -> CCTV06-CCTV10.")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Merged output CSV.")
     parser.add_argument("--strict", action="store_true", help="Fail if any rows are skipped.")
     args = parser.parse_args(argv)
